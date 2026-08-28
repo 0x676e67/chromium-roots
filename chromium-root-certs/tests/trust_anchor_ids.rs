@@ -1,7 +1,7 @@
 //! Validates Trust Anchor ID lookup and wire-format generation.
 
 use chromium_root_certs::{
-    ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TRUST_ANCHOR_ID_COUNT,
+    ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, TRUST_ANCHOR_ID_COUNT,
     trust_anchor_id_for_certificate, trust_anchor_ids,
 };
 
@@ -38,6 +38,12 @@ fn trust_anchor_id_iterator_matches_wire_encoding() {
         iterated.len(),
         "Trust Anchor IDs must be unique"
     );
+
+    let mapped = TLS_TRUST_ANCHORS
+        .iter()
+        .filter_map(|anchor| anchor.trust_anchor_id)
+        .collect::<Vec<_>>();
+    assert_eq!(mapped, decoded, "every published ID must map exactly once");
 }
 
 #[test]

@@ -6,7 +6,7 @@ Chromium Root Store snapshot.
 ## Workspace layout
 
 - chromium-root-certs is the published, no_std runtime crate. It contains only
-  checked-in certificates, webpki trust anchors, Chrome constraints, and Trust
+  checked-in rustls-pki-types certificate entries, Chrome constraints, and Trust
   Anchor IDs.
 - chromium-crs is the unpublished maintenance crate. Its library
   authenticates and parses Chromium source data, while its binary updates and
@@ -33,6 +33,10 @@ runtime data lives under chromium-root-certs/src.
 
 The weekly GitHub workflow performs the network update and uploads changed files
 as an artifact. It does not commit or push changes.
+
+Generation validates every DER certificate and Trust Anchor ID in the signed
+component before filtering the TLS roots that the runtime crate publishes.
+Duplicate IDs and ambiguous provenance fields are rejected.
 
 ## Validation
 

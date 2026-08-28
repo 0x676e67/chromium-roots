@@ -15,7 +15,9 @@ mod crx3;
 mod protobuf;
 mod wire;
 
-pub use certificates::{validate_certificate_der, validate_trust_anchor_id};
+pub use certificates::{
+    validate_certificate_der, validate_tls_trust_anchor_der, validate_trust_anchor_id,
+};
 pub use component::{COMPONENT_UPDATE_URL, ComponentSnapshot, download_latest};
 pub use protobuf::parse_root_store;
 
@@ -210,16 +212,15 @@ fn validate_dotted_version(
     label: &str,
     expected_components: Option<usize>,
 ) -> Result<()> {
-    let components = value.split('.').collect::<Vec<_>>();
+    let components = value.split('.');
     ensure!(
-        !components.is_empty()
-            && components.iter().all(|component| !component.is_empty()
-                && component.bytes().all(|byte| byte.is_ascii_digit())),
+        components.clone().all(|component| !component.is_empty()
+            && component.bytes().all(|byte| byte.is_ascii_digit())),
         "{label} is not a dotted numeric version"
     );
     if let Some(expected_components) = expected_components {
         ensure!(
-            components.len() == expected_components,
+            components.count() == expected_components,
             "{label} must have {expected_components} components"
         );
     }

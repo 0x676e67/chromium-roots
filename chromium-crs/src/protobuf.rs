@@ -1,14 +1,17 @@
 //! Typed Chrome Root Store protobuf decoding.
 //!
 //! The declarations mirror Chromium's checked-in root-store protobuf schema:
-//! <https://chromium.googlesource.com/chromium/src/+/main/net/data/ssl/chrome_root_store/root_store.proto>.
+//! <https://chromium.googlesource.com/chromium/src/+/main/net/cert/root_store.proto>.
 //! The separate wire guard rejects fields that are not represented here before
 //! prost performs typed value decoding.
 
 use anyhow::{Context, Result, bail, ensure};
 use prost::Message;
 
-use crate::{ConstraintSet, RootStore, TrustAnchor, TrustAnchorKind, wire::validate_root_store};
+use crate::{
+    ConstraintSet, RootStore, TrustAnchor, TrustAnchorKind, validate_trust_anchor_id,
+    wire::validate_root_store,
+};
 
 /// Wire representation of a complete Chrome Root Store.
 #[derive(Clone, PartialEq, Message)]
@@ -141,11 +144,18 @@ pub fn parse_root_store(input: &[u8]) -> Result<RootStore> {
         trust_anchors,
         version_major,
         additional_certs,
-        mtc_anchors: _,
+        mtc_anchors,
     } = message;
     ensure!(version_major > 0, "version_major must be positive");
+    for anchor in &mtc_anchors {
+        validate_mtc_anchor(anchor)?;
+    }
 
-    let mut anchors = Vec::with_capacity(trust_anchors.len() + additional_certs.len());
+    let anchor_count = trust_anchors
+        .len()
+        .checked_add(additional_certs.len())
+        .context("Root Store certificate count overflow")?;
+    let mut anchors = Vec::with_capacity(anchor_count);
     for anchor in trust_anchors {
         anchors.push(convert_anchor(anchor, TrustAnchorKind::Root)?);
     }
@@ -159,9 +169,38 @@ pub fn parse_root_store(input: &[u8]) -> Result<RootStore> {
     })
 }
 
+/// Validates metadata that is retained only for schema-change detection.
+fn validate_mtc_anchor(message: &MtcAnchorMessage) -> Result<()> {
+    if let Some(log_id) = message.log_id.as_deref() {
+        validate_trust_anchor_id(log_id).context("invalid MTC log_id")?;
+    } else if message.tls_trust_anchor.unwrap_or(false) {
+        bail!("TLS MTC anchor has no log_id");
+    }
+    if let Some(crs_root_id) = message.crs_root_id {
+        ensure!(
+            crs_root_id > 2,
+            "MTC crs_root_id values 0, 1, and 2 are reserved"
+        );
+    }
+    Ok(())
+}
+
 /// Converts one wire certificate entry while rejecting source-only references.
 fn convert_anchor(message: TrustAnchorMessage, kind: TrustAnchorKind) -> Result<TrustAnchor> {
-    let der = match message.certificate {
+    let TrustAnchorMessage {
+        certificate,
+        ev_policy_oids,
+        constraints,
+        display_name,
+        eutl,
+        enforce_anchor_expiry,
+        enforce_anchor_constraints,
+        tls_trust_anchor,
+        trust_anchor_id,
+        crs_root_id,
+    } = message;
+
+    let der = match certificate {
         Some(certificate::Value::Der(der)) => der,
         Some(certificate::Value::Sha256Hex(_)) => {
             bail!("component RootStore anchor contains a source-only sha256_hex reference")
@@ -169,22 +208,31 @@ fn convert_anchor(message: TrustAnchorMessage, kind: TrustAnchorKind) -> Result<
         None => bail!("component RootStore anchor has no DER"),
     };
 
+    if kind == TrustAnchorKind::Root {
+        ensure!(
+            tls_trust_anchor.is_none(),
+            "trust_anchors entry must not set tls_trust_anchor"
+        );
+    }
+    if let Some(crs_root_id) = crs_root_id {
+        ensure!(
+            crs_root_id > 2,
+            "crs_root_id values 0, 1, and 2 are reserved"
+        );
+    }
+
     let mut anchor = TrustAnchor::new(kind, der);
-    anchor.ev_policy_oids = message.ev_policy_oids;
-    anchor.constraints = message
-        .constraints
-        .into_iter()
-        .map(convert_constraint)
-        .collect();
-    anchor.display_name = message.display_name;
-    anchor.eutl = message.eutl.unwrap_or(false);
-    anchor.enforce_anchor_expiry = message.enforce_anchor_expiry.unwrap_or(false);
-    anchor.enforce_anchor_constraints = message.enforce_anchor_constraints.unwrap_or(false);
-    if let Some(tls_trust_anchor) = message.tls_trust_anchor {
+    anchor.ev_policy_oids = ev_policy_oids;
+    anchor.constraints = constraints.into_iter().map(convert_constraint).collect();
+    anchor.display_name = display_name;
+    anchor.eutl = eutl.unwrap_or(false);
+    anchor.enforce_anchor_expiry = enforce_anchor_expiry.unwrap_or(false);
+    anchor.enforce_anchor_constraints = enforce_anchor_constraints.unwrap_or(false);
+    if let Some(tls_trust_anchor) = tls_trust_anchor {
         anchor.tls_trust_anchor = tls_trust_anchor;
     }
-    anchor.trust_anchor_id = message.trust_anchor_id;
-    anchor.crs_root_id = message.crs_root_id;
+    anchor.trust_anchor_id = trust_anchor_id;
+    anchor.crs_root_id = crs_root_id;
     Ok(anchor)
 }
 
@@ -200,5 +248,71 @@ fn convert_constraint(message: ConstraintSetMessage) -> ConstraintSet {
         index_after: message.index_after,
         validity_starts_not_after_sec: message.validity_starts_not_after_sec,
         validity_starts_after_sec: message.validity_starts_after_sec,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn encoded_root(tls_trust_anchor: Option<bool>, crs_root_id: Option<i32>) -> Vec<u8> {
+        RootStoreMessage {
+            trust_anchors: vec![TrustAnchorMessage {
+                certificate: Some(certificate::Value::Der(vec![0x30, 0x00])),
+                tls_trust_anchor,
+                crs_root_id,
+                ..TrustAnchorMessage::default()
+            }],
+            version_major: 1,
+            ..RootStoreMessage::default()
+        }
+        .encode_to_vec()
+    }
+
+    #[test]
+    fn root_entries_must_leave_tls_trust_anchor_unset() {
+        for value in [Some(false), Some(true)] {
+            let error = parse_root_store(&encoded_root(value, None))
+                .expect_err("an explicit root TLS trust flag must be rejected");
+            assert!(error.to_string().contains("must not set tls_trust_anchor"));
+        }
+
+        assert!(parse_root_store(&encoded_root(None, None)).is_ok());
+    }
+
+    #[test]
+    fn reserved_crs_root_ids_are_rejected() {
+        for value in [i32::MIN, -1, 0, 1, 2] {
+            let error = parse_root_store(&encoded_root(None, Some(value)))
+                .expect_err("a reserved Root Store ID must be rejected");
+            assert!(error.to_string().contains("are reserved"));
+        }
+
+        assert!(parse_root_store(&encoded_root(None, Some(3))).is_ok());
+
+        let reserved_mtc = RootStoreMessage {
+            version_major: 1,
+            mtc_anchors: vec![MtcAnchorMessage {
+                log_id: Some(vec![1]),
+                tls_trust_anchor: Some(true),
+                crs_root_id: Some(2),
+                ..MtcAnchorMessage::default()
+            }],
+            ..RootStoreMessage::default()
+        }
+        .encode_to_vec();
+        assert!(parse_root_store(&reserved_mtc).is_err());
+
+        let missing_log_id = RootStoreMessage {
+            version_major: 1,
+            mtc_anchors: vec![MtcAnchorMessage {
+                tls_trust_anchor: Some(true),
+                crs_root_id: Some(3),
+                ..MtcAnchorMessage::default()
+            }],
+            ..RootStoreMessage::default()
+        }
+        .encode_to_vec();
+        assert!(parse_root_store(&missing_log_id).is_err());
     }
 }

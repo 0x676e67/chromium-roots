@@ -10,6 +10,10 @@ generation.
 
 Authenticated source files are stored in data:
 
+Every DER certificate and Trust Anchor ID in the authenticated component is
+validated before publication filtering. The source lock must contain each field
+once and must name the pinned Chrome component endpoint.
+
 - crs.pb is the serialized Chrome Root Store payload.
 - SOURCE.toml records component versions, URLs, and SHA-256 digests.
 - CHROMIUM_LICENSE records the upstream data license.

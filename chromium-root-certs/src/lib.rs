@@ -2,12 +2,11 @@
 #![forbid(unsafe_code)]
 //! Static classical X.509 TLS trust anchors from the Chromium Root Store.
 //!
-//! Cargo generates the data from the authenticated Chrome PKI Metadata
-//! authenticated source snapshot maintained by the sibling maintenance crate.
-//! Generated source metadata records the component and payload digests.
-//! record the exact component, requesting Chrome version, and content hashes.
-//! The shared generator validates certificate fingerprints, X.509 encoding,
-//! constraints, and Trust Anchor IDs before exposing the generated constants.
+//! Cargo generates the data from an authenticated Chrome PKI Metadata snapshot
+//! maintained by the sibling maintenance crate. Generated provenance records
+//! the exact component, requesting Chrome version, and content hashes. The
+//! shared generator validates every signed X.509 certificate and Trust Anchor
+//! ID, and preserves Chrome-specific constraints in the generated constants.
 //!
 //! This crate preserves Chromium's Root Store data but does not implement
 //! Chromium's complete certificate verifier. Consumers that need
@@ -15,6 +14,7 @@
 //! anchor enforcement flags.
 
 /// Identifies where an anchor appears in Chromium's Root Store data.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TrustAnchorKind {
     /// Entry from the historical `trust_anchors` list.
@@ -27,6 +27,7 @@ pub enum TrustAnchorKind {
 ///
 /// When an anchor has multiple sets, Chromium accepts the anchor when at least
 /// one complete set is satisfied.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RootConstraint {
     /// Latest accepted SCT timestamp, in seconds since the Unix epoch.
@@ -50,6 +51,7 @@ pub struct RootConstraint {
 }
 
 /// Metadata for one classical X.509 TLS trust anchor.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TrustAnchor {
     /// DER-encoded certificate.
@@ -136,12 +138,14 @@ pub fn trust_anchor_id_for_certificate(certificate_der: &[u8]) -> Option<&'stati
 }
 
 /// Iterates over DER-encoded TLS trust-anchor certificates.
-pub fn certificates() -> impl Iterator<Item = &'static [u8]> {
+#[must_use]
+pub fn certificates() -> impl ExactSizeIterator<Item = &'static [u8]> + DoubleEndedIterator {
     TLS_TRUST_ANCHORS.iter().map(|anchor| anchor.der)
 }
 
 /// Iterates over the unique Trust Anchor IDs in deterministic source order.
-pub fn trust_anchor_ids() -> impl Iterator<Item = &'static [u8]> {
+#[must_use]
+pub fn trust_anchor_ids() -> impl ExactSizeIterator<Item = &'static [u8]> + DoubleEndedIterator {
     TRUST_ANCHOR_IDS.iter().copied()
 }
 

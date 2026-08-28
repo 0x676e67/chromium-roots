@@ -7,22 +7,38 @@ use anyhow::{Result, anyhow, ensure};
 use sha2::{Digest, Sha256};
 use x509_parser::parse_x509_certificate;
 
-/// Parses one complete CA certificate and returns its SHA-256 fingerprint.
+/// Parses one complete certificate and returns its SHA-256 fingerprint.
 ///
 /// # Errors
 ///
 /// Returns an error when the input is not one complete DER-encoded X.509 certificate.
 pub fn validate_certificate_der(der: &[u8]) -> Result<[u8; 32]> {
+    validate_certificate(der, false)
+}
+
+/// Parses one complete CA certificate and returns its SHA-256 fingerprint.
+///
+/// # Errors
+///
+/// Returns an error when the input is not one complete DER-encoded X.509 CA certificate.
+pub fn validate_tls_trust_anchor_der(der: &[u8]) -> Result<[u8; 32]> {
+    validate_certificate(der, true)
+}
+
+/// Validates one complete certificate with an optional CA requirement.
+fn validate_certificate(der: &[u8], require_ca: bool) -> Result<[u8; 32]> {
     let (remainder, certificate) = parse_x509_certificate(der)
         .map_err(|error| anyhow!("invalid X.509 certificate: {error}"))?;
     ensure!(
         remainder.is_empty(),
         "trailing data after X.509 certificate"
     );
-    ensure!(
-        certificate.is_ca(),
-        "TLS trust anchor is not a CA certificate"
-    );
+    if require_ca {
+        ensure!(
+            certificate.is_ca(),
+            "TLS trust anchor is not a CA certificate"
+        );
+    }
     Ok(Sha256::digest(der).into())
 }
 

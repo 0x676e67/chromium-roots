@@ -36,43 +36,43 @@ pub(super) fn generate_source(
     let tokens = quote! {
         #(#certificate_items)*
 
-        #[doc = "Chrome PKI Metadata component ID used for this snapshot."]
+        #[doc = " Chrome PKI Metadata component ID used for this snapshot."]
         pub const SOURCE_COMPONENT_ID: &str = #component_id;
 
-        #[doc = "Chrome PKI Metadata component version used for this snapshot."]
+        #[doc = " Chrome PKI Metadata component version used for this snapshot."]
         pub const SOURCE_COMPONENT_VERSION: &str = #component_version;
 
-        #[doc = "Chrome Stable version used to request the component."]
+        #[doc = " Chrome Stable version used to request the component."]
         pub const SOURCE_BROWSER_VERSION: &str = #browser_version;
 
-        #[doc = "SHA-256 of the verified CRX3 package."]
+        #[doc = " SHA-256 of the verified CRX3 package."]
         pub const SOURCE_CRX_SHA256: [u8; 32] = *#package_hash;
 
-        #[doc = "SHA-256 of the serialized root-store payload."]
+        #[doc = " SHA-256 of the serialized root-store payload."]
         pub const SOURCE_CRS_SHA256: [u8; 32] = *#payload_hash;
 
-        #[doc = "Chrome Root Store major version used by this snapshot."]
+        #[doc = " Chrome Root Store major version used by this snapshot."]
         pub const ROOT_STORE_VERSION: i64 = #version;
 
-        #[doc = "Number of classical X.509 TLS trust anchors in this snapshot."]
+        #[doc = " Number of classical X.509 TLS trust anchors in this snapshot."]
         pub const TLS_TRUST_ANCHOR_COUNT: usize = #anchor_count;
 
         // Trust Anchor IDs are independent Chromium metadata, not certificate
         // fingerprints. This is their single generated representation.
         const TRUST_ANCHOR_IDS: &[&[u8]] = &[#(#trust_anchor_ids),*];
 
-        #[doc = "Number of unique TLS Trust Anchor IDs in this snapshot."]
+        #[doc = " Number of unique TLS Trust Anchor IDs in this snapshot."]
         pub const TRUST_ANCHOR_ID_COUNT: usize = TRUST_ANCHOR_IDS.len();
 
-        #[doc = "Classical X.509 certificates trusted for TLS by this Root Store snapshot."]
-        #[doc = ""]
-        #[doc = "Entries retain Chromium source order. Additional certificates are included"]
-        #[doc = "only when Chromium marks them as TLS trust anchors."]
+        #[doc = " Classical X.509 certificates trusted for TLS by this Root Store snapshot."]
+        #[doc = " "]
+        #[doc = " Entries retain Chromium source order. Additional certificates are included"]
+        #[doc = " only when Chromium marks them as TLS trust anchors."]
         pub const TLS_SERVER_ROOT_CERTS: &[rustls_pki_types::CertificateDer<'static>] = &[
             #(rustls_pki_types::CertificateDer::from_slice(#certificate_names)),*
         ];
 
-        #[doc = "Chromium TLS trust anchors and their source metadata."]
+        #[doc = " Chromium TLS trust anchors and their source metadata."]
         pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
             #(#anchor_items),*
         ];
@@ -80,11 +80,11 @@ pub(super) fn generate_source(
         const ENCODED_TRUST_ANCHOR_IDS_LEN: usize =
             encoded_trust_anchor_ids_len(TRUST_ANCHOR_IDS);
 
-        #[doc = "Length-prefixed Trust Anchor IDs for native"]
-        #[doc = "requested-trust-anchor setter APIs."]
-        #[doc = ""]
-        #[doc = "IDs use deterministic Chromium source order. The TLS requested list is"]
-        #[doc = "semantically unordered, so this byte order is not a Chrome fingerprint."]
+        #[doc = " Length-prefixed Trust Anchor IDs for native"]
+        #[doc = " requested-trust-anchor setter APIs."]
+        #[doc = " "]
+        #[doc = " IDs use deterministic Chromium source order. The TLS requested list is"]
+        #[doc = " semantically unordered, so this byte order is not a Chrome fingerprint."]
         pub const ENCODED_TRUST_ANCHOR_IDS: &[u8] =
             &encode_trust_anchor_ids::<ENCODED_TRUST_ANCHOR_IDS_LEN>(TRUST_ANCHOR_IDS);
     };
@@ -167,6 +167,7 @@ fn generate_anchor_tokens(anchors: &[ValidatedTrustAnchor<'_>]) -> GeneratedAnch
         anchor_items,
     }
 }
+
 /// Converts one validated constraint set into typed source tokens.
 fn constraint_tokens(constraint: &ConstraintSet) -> TokenStream {
     let sct_not_after_sec = optional_number(constraint.sct_not_after_sec);

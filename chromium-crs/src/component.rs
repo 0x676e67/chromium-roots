@@ -11,6 +11,7 @@ use serde_json::Value;
 use crate::{
     PKI_METADATA_COMPONENT_ID, SourceMetadata,
     crx3::{self, VerifiedPackage},
+    validate_dotted_version,
 };
 
 const VERSION_HISTORY_URL: &str = "https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions?page_size=1&order_by=version%20desc";
@@ -127,7 +128,7 @@ fn latest_stable_browser_version() -> Result<String> {
         .and_then(|version| version.get("version"))
         .and_then(Value::as_str)
         .context("VersionHistory response has no stable Chrome version")?;
-    validate_dotted_version(version, 4, "Chrome version")?;
+    validate_dotted_version(version, "Chrome version", Some(4))?;
     Ok(version.to_owned())
 }
 
@@ -237,19 +238,6 @@ fn read_limited(reader: impl Read, limit: u64, label: &str) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
-/// Validates a fixed-width dotted ASCII numeric version.
-fn validate_dotted_version(value: &str, components: usize, label: &str) -> Result<()> {
-    let parts = value.split('.').collect::<Vec<_>>();
-    ensure!(
-        parts.len() == components
-            && parts
-                .iter()
-                .all(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit())),
-        "{label} is not a {components}-component numeric version"
-    );
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -265,7 +253,36 @@ mod tests {
 
     #[test]
     fn chrome_versions_require_four_numeric_components() {
-        assert!(validate_dotted_version("150.0.7871.175", 4, "version").is_ok());
-        assert!(validate_dotted_version("150.latest", 4, "version").is_err());
+        assert!(validate_dotted_version("150.0.7871.175", "version", Some(4)).is_ok());
+        assert!(validate_dotted_version("150.latest", "version", Some(4)).is_err());
+    }
+
+    #[test]
+    fn component_download_urls_are_strictly_allowlisted() {
+        for url in [
+            "https://clients2.google.com/service/update2/crx",
+            "https://www.google.com/dl/release2/file.crx3",
+            "https://dl.google.com/release2/file.crx3",
+            "https://edgedl.me.gvt1.com/edgedl/release2/file.crx3",
+            "https://redirector.gvt1.com/edgedl/release2/file.crx3",
+        ] {
+            assert!(
+                ensure_allowed_download_url(url).is_ok(),
+                "expected allowlisted URL: {url}"
+            );
+        }
+
+        for url in [
+            "http://clients2.google.com/service/update2/crx",
+            "https://clients2.google.com.evil.example/service/update2/crx",
+            "https://clients2.google.com@evil.example/service/update2/crx",
+            "https://dl.google.com:443/release2/file.crx3",
+            "https://example.com/https://clients2.google.com/",
+        ] {
+            assert!(
+                ensure_allowed_download_url(url).is_err(),
+                "expected rejected URL: {url}"
+            );
+        }
     }
 }

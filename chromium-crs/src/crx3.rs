@@ -24,7 +24,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use zip::ZipArchive;
 
-use crate::PKI_METADATA_COMPONENT_ID;
+use crate::{PKI_METADATA_COMPONENT_ID, validate_dotted_version};
 
 const CRX_MAGIC: &[u8; 4] = b"Cr24";
 const CRX_VERSION: u32 = 3;
@@ -189,7 +189,7 @@ pub(super) fn verify_and_extract(crx: &[u8]) -> Result<VerifiedPackage> {
         .get("version")
         .and_then(Value::as_str)
         .context("component manifest has no version")?;
-    validate_component_version(component_version)?;
+    validate_dotted_version(component_version, "component version", None)?;
 
     Ok(VerifiedPackage {
         component_version: component_version.to_owned(),
@@ -332,17 +332,6 @@ fn decode_component_nibble(value: u8) -> Result<u8> {
         b'a'..=b'p' => Ok(value - b'a'),
         _ => bail!("component ID contains a character outside a-p"),
     }
-}
-
-/// Accepts a non-empty dotted numeric component version.
-fn validate_component_version(version: &str) -> Result<()> {
-    ensure!(
-        version
-            .split('.')
-            .all(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit())),
-        "component version is not numeric"
-    );
-    Ok(())
 }
 
 #[cfg(test)]
