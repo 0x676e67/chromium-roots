@@ -1,0 +1,88 @@
+name: Check Chrome Root Store Update
+
+on:
+  schedule:
+    # Every Monday at 11:23 Asia/Shanghai (03:23 UTC).
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-chrome-root-store-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      CMAKE_GENERATOR: Unix Makefiles
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust 1.85
+        run: |
+          rustup toolchain install 1.85.0 --profile minimal
+          rustup component add --toolchain 1.85.0 rustfmt clippy
+          rustup default 1.85.0
+
+      - name: Download and verify the latest PKI Metadata component
+        run: cargo run --locked -p chromium-crs -- update
+
+      - name: Detect Root Store changes
+        id: changes
+        shell: bash
+        run: |
+          if git diff --quiet -- \
+            chromium-crs/data/crs.pb \
+            chromium-crs/data/SOURCE.toml
+          chromium-root-certs/src/generated.rs; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check formatting
+        if: steps.changes.outputs.changed == 'true'
+        run: cargo fmt --all -- --check
+
+      - name: Run workspace tests
+        if: steps.changes.outputs.changed == 'true'
+        run: cargo test --workspace --locked
+
+      - name: Check the signed component snapshot
+        if: steps.changes.outputs.changed == 'true'
+        run: cargo run --locked -p chromium-crs -- check
+
+      - name: Run Clippy
+        if: steps.changes.outputs.changed == 'true'
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Run the btls integration example
+        if: steps.changes.outputs.changed == 'true'
+        run: cargo run --locked --example btls --features btls-example
+
+      - name: Upload the reviewed update candidate
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-root-store-update
+          path: |
+            chromium-crs/data/crs.pb
+            chromium-crs/data/SOURCE.toml
+          chromium-root-certs/src/generated.rs
+          if-no-files-found: error
+
+      - name: Report the available update
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          {
+            echo "## Chrome Root Store update available"
+            echo
+            echo "The signed PKI Metadata component changed."
+            echo "Download the chrome-root-store-update artifact, review SOURCE.toml, and submit the update manually."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::A validated Chrome Root Store update is available as a workflow artifact."

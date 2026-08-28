@@ -1,0 +1,30 @@
+[package]
+name = "chromium-crs"
+version = "0.1.0"
+edition = { workspace = true }
+rust-version = { workspace = true }
+authors = { workspace = true }
+description = "Authenticated Chrome Root Store source and update pipeline"
+repository = { workspace = true }
+readme = "README.md"
+license = { workspace = true }
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+hex = { workspace = true }
+p256 = { workspace = true }
+prettyplease = { workspace = true }
+proc-macro2 = { workspace = true }
+prost = { workspace = true }
+quote = { workspace = true }
+rsa = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+syn = { workspace = true }
+ureq = { workspace = true }
+x509-parser = { workspace = true }
+zip = { workspace = true }
+
+[lints]
+workspace = true
