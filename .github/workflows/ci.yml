@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workflows:
+    name: GitHub Actions workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Lint workflows
+        uses: docker://rhysd/actionlint:1.7.7
+
+  msrv:
+    name: Rust 1.85
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust 1.85
+        uses: dtolnay/rust-toolchain@1.85.0
+
+      - name: Check minimum supported Rust version
+        run: cargo check --workspace --all-targets --locked
+
+  rust:
+    name: Rust stable
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RUSTDOCFLAGS: -D warnings
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Check workspace
+        run: cargo check --workspace --all-targets --locked
+
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Run workspace tests
+        run: cargo test --workspace --locked
+
+      - name: Check documentation
+        run: cargo doc --workspace --no-deps --locked
+
+      - name: Check the signed component snapshot
+        run: cargo run --locked -p chromium-crs -- check
+
+      - name: Check the publishable package
+        run: cargo package --locked -p chromium-root-certs
+
+  btls-example:
+    name: btls integration example
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CMAKE_GENERATOR: Unix Makefiles
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run the btls integration example
+        run: cargo run --locked -p chromium-root-certs --example btls --features btls-example
