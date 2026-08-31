@@ -28,7 +28,7 @@ syn = { version = "3", features = ["full"] }
 ureq = { version = "3.1.4", default-features = false, features = ["rustls"] }
 webpki = { package = "rustls-webpki", version = "0.103", features = ["alloc"] }
 x509-parser = "0.18.0"
-zip = { version = "=4.6.1", default-features = false, features = ["deflate"] }
+zip = { version = "=7.2.0", default-features = false, features = ["deflate"] }
 
 [workspace.lints.rust]
 missing_docs = "warn"
