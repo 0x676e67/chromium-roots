@@ -15,7 +15,7 @@ license = "BSD-3-Clause"
 [workspace.dependencies]
 anyhow = "1.0.100"
 hex = "0.4.3"
-p256 = "0.13.2"
+p256 = "0.14.0"
 prettyplease = "0.3"
 proc-macro2 = "1"
 prost = "0.14.1"
