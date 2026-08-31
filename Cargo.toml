@@ -23,7 +23,7 @@ quote = "1"
 rsa = "0.9.10"
 rustls-pki-types = { version = "1.8", default-features = false }
 serde_json = "1.0.145"
-sha2 = { version = "0.10.9", features = ["oid"] }
+sha2 = { version = "0.11.0", features = ["oid"] }
 syn = { version = "3", features = ["full"] }
 ureq = { version = "3.1.4", default-features = false, features = ["rustls"] }
 webpki = { package = "rustls-webpki", version = "0.103", features = ["alloc"] }
