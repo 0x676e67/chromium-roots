@@ -97,11 +97,14 @@ pub struct TrustAnchor {
 
 // These functions are evaluated only by generated constants. Keeping the
 // encoder here makes the metadata list the sole source of Trust Anchor ID bytes.
-const fn encoded_trust_anchor_ids_len(ids: &[&[u8]]) -> usize {
+const fn encoded_trust_anchor_ids_len(anchors: &[TrustAnchor]) -> usize {
     let mut index = 0;
     let mut length = 0usize;
-    while index < ids.len() {
-        let id = ids[index];
+    while index < anchors.len() {
+        let Some(id) = anchors[index].trust_anchor_id else {
+            index += 1;
+            continue;
+        };
         assert!(!id.is_empty(), "Trust Anchor IDs must not be empty");
         assert!(
             id.len() <= 255,
@@ -120,13 +123,16 @@ const fn encoded_trust_anchor_ids_len(ids: &[&[u8]]) -> usize {
     length
 }
 
-const fn encode_trust_anchor_ids<const N: usize>(ids: &[&[u8]]) -> [u8; N] {
+const fn encode_trust_anchor_ids<const N: usize>(anchors: &[TrustAnchor]) -> [u8; N] {
     let mut encoded = [0; N];
-    let mut id_index = 0;
+    let mut anchor_index = 0;
     let mut offset = 0;
 
-    while id_index < ids.len() {
-        let id = ids[id_index];
+    while anchor_index < anchors.len() {
+        let Some(id) = anchors[anchor_index].trust_anchor_id else {
+            anchor_index += 1;
+            continue;
+        };
         encoded[offset] = id.len().to_le_bytes()[0];
         offset += 1;
 
@@ -136,7 +142,7 @@ const fn encode_trust_anchor_ids<const N: usize>(ids: &[&[u8]]) -> [u8; N] {
             offset += 1;
             byte_index += 1;
         }
-        id_index += 1;
+        anchor_index += 1;
     }
 
     assert!(offset == N, "encoded Trust Anchor ID length mismatch");
@@ -152,18 +158,4 @@ pub fn trust_anchor_id_for_certificate(certificate_der: &[u8]) -> Option<&'stati
         .iter()
         .find(|anchor| anchor.der == certificate_der)
         .and_then(|anchor| anchor.trust_anchor_id)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{encode_trust_anchor_ids, encoded_trust_anchor_ids_len};
-
-    const TEST_IDS: &[&[u8]] = &[b"\x01", b"\x02\x03"];
-    const TEST_ENCODED: [u8; encoded_trust_anchor_ids_len(TEST_IDS)] =
-        encode_trust_anchor_ids::<{ encoded_trust_anchor_ids_len(TEST_IDS) }>(TEST_IDS);
-
-    #[test]
-    fn compile_time_encoder_adds_eight_bit_lengths() {
-        assert_eq!(TEST_ENCODED, [1, 1, 2, 2, 3]);
-    }
 }

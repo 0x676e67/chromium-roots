@@ -15,4 +15,4 @@ The checked-in source is generated deterministically by [`chromium-crs`](../chro
 
 ## License
 
-See [LICENSE](LICENSE) and [NOTICE](NOTICE) for licensing and attribution.
+See [LICENSE](LICENSE), [NOTICE](NOTICE), and [CHROMIUM_LICENSE](CHROMIUM_LICENSE) for licensing and attribution.

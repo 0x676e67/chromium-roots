@@ -315,9 +315,14 @@ fn read_entry(archive: &mut ZipArchive<Cursor<&[u8]>>, name: &str, limit: u64) -
 
 /// Converts Chrome's a-to-p extension identifier into its 16-byte digest prefix.
 fn decode_component_id(id: &str) -> Result<[u8; 16]> {
-    ensure!(id.len() == 32, "component ID must contain 32 characters");
+    let (pairs, remainder) = id.as_bytes().as_chunks::<2>();
+    ensure!(
+        pairs.len() == 16 && remainder.is_empty(),
+        "component ID must contain 32 characters"
+    );
+
     let mut decoded = [0u8; 16];
-    for (output, pair) in decoded.iter_mut().zip(id.as_bytes().chunks_exact(2)) {
+    for (output, pair) in decoded.iter_mut().zip(pairs) {
         let high = decode_component_nibble(pair[0])?;
         let low = decode_component_nibble(pair[1])?;
         *output = (high << 4) | low;

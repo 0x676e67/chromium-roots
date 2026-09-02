@@ -126,36 +126,6 @@ pub const SOURCE_CRX_SHA256: [u8; 32] = *b"J0\xC2T\x97\xC9\xE6T\xA8\xD7%\t\xE3\x
 pub const SOURCE_CRS_SHA256: [u8; 32] = *b"b|\xFC\xFE\x94\"\xC0HB\x92\x12\xCE\xA2\xE3\xFD.>6\xAA\xC2\xD4\x1E_\xE6\x83\xEB[\x8C\x14\x7F\xF5X";
 /// Chrome Root Store major version used by this snapshot.
 pub const ROOT_STORE_VERSION: i64 = 39i64;
-const TRUST_ANCHOR_IDS: &[&[u8]] = &[
-    b"\x83\x9Ad\x8C\x9B-\x01\n",
-    b"\x83\x9Ad\x8C\x9B-\x01\t",
-    b"\xD6y\t\x01",
-    b"\xD6y\t\x04",
-    b"\x82\xDF\x13\x02\x01",
-    b"\x83\x9Ad\x8C\x9B-\x01\x08",
-    b"\x83\x9Ad\x8C\x9B-\x01\x07",
-    b"\x82\xDF\x13\x02\x06",
-    b"\x83\x9Ad\x8C\x9B-\x01\x13",
-    b"\x83\x9Ad\x8C\x9B-\x01\x12",
-    b"\x83\x9Ad\x8C\x9B-\x01\x0B",
-    b"\x83\x9Ad\x8C\x9B-\x01\x0C",
-    b"\x83\x9Ad\x8C\x9B-\x01\r",
-    b"\xD6y\t\x05",
-    b"\xD6y\t\x06",
-    b"\xD6y\t\x07",
-    b"\xD6y\t\x08",
-    b"\xD6y\t\n",
-    b"\xD6y\t\x0B",
-    b"\xD6y\t\x0C",
-    b"\xD6y\t\r",
-    b"\xD6y\t\x0F",
-    b"\x82\xDF\x13\x02\r",
-    b"\x82\xDF\x13\x02\x0E",
-    b"\x82\xDF\x13\x02\x0F",
-    b"\x82\xDF\x13\x02\x12",
-    b"\x82\xDF\x13\x02\x13",
-    b"\x82\xDF\x13\x02\x14",
-];
 /// Classical X.509 certificates trusted for TLS by this Root Store snapshot.
 ///
 /// Entries retain Chromium source order. Additional certificates are included
@@ -277,8 +247,7 @@ pub const TLS_SERVER_ROOT_CERTS: &[rustls_pki_types::CertificateDer<'static>] = 
     rustls_pki_types::CertificateDer::from_slice(CERTIFICATE_113),
     rustls_pki_types::CertificateDer::from_slice(CERTIFICATE_114),
 ];
-/// Chromium TLS trust anchors and their source metadata.
-pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
+const TLS_TRUST_ANCHORS_DATA: &[TrustAnchor] = &[
     TrustAnchor {
         der: CERTIFICATE_0,
         sha256: *b"U\x92`\x84\xEC\x96:d\xB9n*\xBE\x01\xCE\x0B\xA8jd\xFB\xFE\xBC\xC7\xAA\xB5\xAF\xC1U\xB3\x7F\xD7`f",
@@ -745,7 +714,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"1\xADfH\xF8\x10A8\xC78\xF3\x9E\xA42\x0139>:\x18\xCC\x02)n\xF9|*\xC9\xEFg1\xD0",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(21_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[0usize]),
+        trust_anchor_id: Some(b"\x83\x9Ad\x8C\x9B-\x01\n"),
         constraints: &[
             RootConstraint {
                 sct_not_after_sec: Some(1_820_966_399_i64),
@@ -781,7 +750,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\xCB<\xCB\xB7`1\xE5\xE0\x13\x8F\x8D\xD3\x9A#\xF9\xDEG\xFF\xC3^C\xC1\x14L\xEA'\xD4jZ\xB1\xCB_",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(25_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[1usize]),
+        trust_anchor_id: Some(b"\x83\x9Ad\x8C\x9B-\x01\t"),
         constraints: &[
             RootConstraint {
                 sct_not_after_sec: Some(1_820_966_399_i64),
@@ -1003,7 +972,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\xD9GC*\xBD\xE7\xB7\xFA\x90\xFC.kY\x10\x1B\x12\x80\xE0\xE1\xC7\xE4\xE4\x0F\xA3\xC6\x88\x7F\xFFW\xA7\xF4\xCF",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(36_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[2usize]),
+        trust_anchor_id: Some(b"\xD6y\t\x01"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -1016,7 +985,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"4\x9D\xFA@X\xC5\xE2c\x12;9\x8A\xE7\x95W<N\x13\x13\xC8?\xE6\x8F\x93Ul\xD5\xE8\x03\x1B<}",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(37_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[3usize]),
+        trust_anchor_id: Some(b"\xD6y\t\x04"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -1130,7 +1099,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\x96\xBC\xEC\x06&Iv\xF3t`w\x9A\xCF(\xC5\xA7\xCF\xE8\xA3\xC0\xAA\xE1\x1A\x8F\xFC\xEE\x05\xC0\xBD\xDF\x08\xC6",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(45_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[4usize]),
+        trust_anchor_id: Some(b"\x82\xDF\x13\x02\x01"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -1362,7 +1331,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\x88\xEF\x81\xDE .\xB0\x18E.C\xF8dr\\\xEA_\xBD\x1F\xC2\xD9\xD2\x05s\x07\t\xC5\xD8\xB8i\x0FF",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(55_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[5usize]),
+        trust_anchor_id: Some(b"\x83\x9Ad\x8C\x9B-\x01\x08"),
         constraints: &[
             RootConstraint {
                 sct_not_after_sec: Some(1_820_966_399_i64),
@@ -1398,7 +1367,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\x8F\xE4\xFB\n\xF9:M\rg\xDB\x0B\xEB\xB2>7\xC7\x1B\xF3%\xDC\xBC\xDD$\x0E\xA0M\xAFX\xB4~\x18@",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(56_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[6usize]),
+        trust_anchor_id: Some(b"\x83\x9Ad\x8C\x9B-\x01\x07"),
         constraints: &[
             RootConstraint {
                 sct_not_after_sec: Some(1_820_966_399_i64),
@@ -1983,7 +1952,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"ir\x9B\x8E\x15\xA8n\xFC\x17zW\xAF\xB7\x17\x1D\xFCd\xAD\xD2\x8C/\xCA\x8C\xF1P~4E<\xCB\x14p",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(79_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[7usize]),
+        trust_anchor_id: Some(b"\x82\xDF\x13\x02\x06"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2022,7 +1991,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\x01\x8E\x13\xF0w%2\xCF\x80\x9B\xD1\xB1r\x81\x86r\x83\xFCH\xC6\xE1;\xE9\xC6\x98\x12\x85JI\x0C\x1B\x05",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(82_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[8usize]),
+        trust_anchor_id: Some(b"\x83\x9Ad\x8C\x9B-\x01\x13"),
         constraints: &[],
         ev_policy_oids: &["2.23.140.1.1"],
         display_name: None,
@@ -2035,7 +2004,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"7\x1A\0\xDC\x053\xB3r\x1A~\xEB@\xE8A\x9Epy\x9D+\n\x0F,\x1D\x80i1e\xF7\xCE\xC4\xADu",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(83_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[9usize]),
+        trust_anchor_id: Some(b"\x83\x9Ad\x8C\x9B-\x01\x12"),
         constraints: &[],
         ev_policy_oids: &["2.23.140.1.1"],
         display_name: None,
@@ -2557,7 +2526,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"U/{\xDC\xF1\xA7\xAF\x9El\xE6r\x01\x7FO\x12\xAB\xF7r@\xC7\x8Ev\x1A\xC2\x03\xD1\xD9\xD2\n\xC8\x99\x88",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(22_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[10usize]),
+        trust_anchor_id: Some(b"\x83\x9Ad\x8C\x9B-\x01\x0B"),
         constraints: &[
             RootConstraint {
                 sct_not_after_sec: Some(1_789_430_399_i64),
@@ -2593,7 +2562,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"}\x05\xEB\xB6\x823\x9F\x8C\x94Q\xEE\tN\xEB\xFE\xFAyS\xA1\x14\xED\xB2\xF4IIE/\xAB}/\xC1\x85",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(23_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[11usize]),
+        trust_anchor_id: Some(b"\x83\x9Ad\x8C\x9B-\x01\x0C"),
         constraints: &[
             RootConstraint {
                 sct_not_after_sec: Some(1_789_430_399_i64),
@@ -2629,7 +2598,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"~7\xCB\x8BLG\t\x0C\xAB6U\x1B\xA6\xF4]\xB8@h\x0F\xBA\x16j\x95-\xB1\0q\x7FC\x05?\xC2",
         kind: TrustAnchorKind::Root,
         crs_root_id: Some(24_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[12usize]),
+        trust_anchor_id: Some(b"\x83\x9Ad\x8C\x9B-\x01\r"),
         constraints: &[
             RootConstraint {
                 sct_not_after_sec: Some(1_789_430_399_i64),
@@ -2665,7 +2634,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\xB1\x0Bo\0\xE6\tP\x9E\x87\0\xF6\xD3F\x87\xA2\xBF\xCE8\xEA\x05\xA8\xFD\xF1\xCD\xC4\x0C:*\r\r\x0EE",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(36_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[13usize]),
+        trust_anchor_id: Some(b"\xD6y\t\x05"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2678,7 +2647,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\xE6\xFE\"\xBFE\xE4\xF0\xD3\xB8\\Y\xE0,\x0FIT\x18\xE1\xEB\x8D2\x10\xF7\x88\xD4\x8C\xD5\xE1\xCBT|\xD4",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(36_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[14usize]),
+        trust_anchor_id: Some(b"\xD6y\t\x06"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2691,7 +2660,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"/\xE3W\xDB\x13u\x1F\xF9\x16\x0E\x875Iu\xB3@t\x98\xF4\x1C\x9B\xD1jHexf\xE6\xE5\xA9\xB4\xC7",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(36_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[15usize]),
+        trust_anchor_id: Some(b"\xD6y\t\x07"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2704,7 +2673,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\xDC\x94\x16\xC2\xF8U\x12mm\xE9wgu8\xF2\xF9g\xFFI\x98\xE9\r\xFACZ\x17!\x9B\xE0w\xFC\x06",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(36_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[16usize]),
+        trust_anchor_id: Some(b"\xD6y\t\x08"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2717,7 +2686,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\x1D\xFC\x16\x05\xFB\xAD5\x8D\x8B\xC8D\xF7m\x15 ?\xAC\x9C\xA5\xC1\xA7\x9F\xD4\x85\x7F\xFA\xF2\x86O\xBE\xBF\x96",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(37_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[17usize]),
+        trust_anchor_id: Some(b"\xD6y\t\n"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2730,7 +2699,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\x9C?/\xD1\x1CW\xD7\xC6I\xADZ\t2\xC0\xF0\xD2\x97V\xF6\xA0\xA1\xC7LC\xE1\xE8\x9Ab\xD6L\xD3 ",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(37_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[18usize]),
+        trust_anchor_id: Some(b"\xD6y\t\x0B"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2743,7 +2712,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\x9F\x81\x9AL\x87n\x12\xDC\x84\xE6\xFE\x0E7\xC1\xA6\x9B\x13p\x94\xB4S\xFA\x98D\x93\x98\xF4\xB7\x1FM\0\x92",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(37_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[19usize]),
+        trust_anchor_id: Some(b"\xD6y\t\x0C"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2756,7 +2725,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\xD0\xC9~V\xC7\xB0\xBA\x81-\x94J\xD7q\xF7y\x9B]AD\xA22zNAeT\xF7\xEE*\xA0\xAE\xAE",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(37_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[20usize]),
+        trust_anchor_id: Some(b"\xD6y\t\r"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2769,7 +2738,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\x81,!.\x9EE\xDCP\x05\xC7\xF4t\x11\x18?_\xB2\xFF\x1B\xAE\xE1\x84\xD35K.\x93\xD7\x8C(\x01d",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(37_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[21usize]),
+        trust_anchor_id: Some(b"\xD6y\t\x0F"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2782,7 +2751,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"TqT \"L[e\xBE\xED\x01\x8D\xC3\x94\rs8\xC5w\xE3\"\xD5H\x8Fc=\x8Cj\x8F\xEDa\xB2",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(79_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[22usize]),
+        trust_anchor_id: Some(b"\x82\xDF\x13\x02\r"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2795,7 +2764,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\xAC\x12tT\"g\xF1{RU5\xB5V;\xF71\xFE\xBB\x18%3\xB4j\x82\xDC\x86\x9C\xB6N\xB5(\xC0",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(79_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[23usize]),
+        trust_anchor_id: Some(b"\x82\xDF\x13\x02\x0E"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2808,7 +2777,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"A\x85\xDF\x97\x80l+\xA7o\x1Dy\x82?\x11/\xFAc\x9AI\xCC\xDC\x99\t\x08\x10 g\xABd\x12\xB8\x86",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(79_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[24usize]),
+        trust_anchor_id: Some(b"\x82\xDF\x13\x02\x0F"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2821,7 +2790,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\x13\x1F\xCEw\x84\x01h\x99\xA5\xA0\x02\x03\xA9\xEF\xC8\x0F\x18\xEB\xBDuX\x07\x17\xED\xC1U5\x80\x93\x086\xEC",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(45_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[25usize]),
+        trust_anchor_id: Some(b"\x82\xDF\x13\x02\x12"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2834,7 +2803,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"\xD3\xB1(!j\x84?\x8E\xF12\x15\x01\xF5\xDFR\xA5\xDFR\x93\x9E\xE2\xC1\x92\x97q,\xD3\xDEMA\x93T",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(45_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[26usize]),
+        trust_anchor_id: Some(b"\x82\xDF\x13\x02\x13"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2847,7 +2816,7 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         sha256: *b"$\xD4Z\xA9\xB8\xD6\x05=(\x1F8B\xC8\xCC\x0Cl\x1A\xF7\xCC\xDF\xD4-\xD5\xC1/jt\xFA\x93#\xF7\xA2",
         kind: TrustAnchorKind::Additional,
         crs_root_id: Some(45_i32),
-        trust_anchor_id: Some(TRUST_ANCHOR_IDS[27usize]),
+        trust_anchor_id: Some(b"\x82\xDF\x13\x02\x14"),
         constraints: &[],
         ev_policy_oids: &[],
         display_name: None,
@@ -2856,11 +2825,13 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         enforce_anchor_constraints: true,
     },
 ];
+/// Chromium TLS trust anchors and their source metadata.
+pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = TLS_TRUST_ANCHORS_DATA;
 /// Length-prefixed Trust Anchor IDs for native
 /// requested-trust-anchor setter APIs.
 ///
 /// IDs use deterministic Chromium source order. The TLS requested list is
 /// semantically unordered, so this byte order is not a Chrome fingerprint.
 pub const ENCODED_TRUST_ANCHOR_IDS: &[u8] = &encode_trust_anchor_ids::<
-    { encoded_trust_anchor_ids_len(TRUST_ANCHOR_IDS) },
->(TRUST_ANCHOR_IDS);
+    { encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS_DATA) },
+>(TLS_TRUST_ANCHORS_DATA);

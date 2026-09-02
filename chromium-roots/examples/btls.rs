@@ -4,15 +4,21 @@
 //! It enforces Chromium's anchor-expiry and X.509 anchor-constraint flags, but
 //! does not reproduce Chromium's separate SCT, browser-version, or DNS rules.
 
-use std::error::Error;
-use std::io::{self, Read, Write};
-use std::net::TcpStream;
-use std::time::Duration;
+use std::{
+    error::Error,
+    io::{self, Read, Write},
+    net::TcpStream,
+    time::Duration,
+};
 
-use btls::ssl::{SslConnector, SslContextBuilder, SslMethod};
-use btls::stack::Stack;
-use btls::x509::store::{X509Store, X509StoreBuilder};
-use btls::x509::{X509, X509StoreContext, X509StoreContextRef};
+use btls::{
+    ssl::{SslConnector, SslContextBuilder, SslMethod},
+    stack::Stack,
+    x509::{
+        X509, X509StoreContext, X509StoreContextRef,
+        store::{X509Store, X509StoreBuilder},
+    },
+};
 use chromium_roots::{ENCODED_TRUST_ANCHOR_IDS, TLS_TRUST_ANCHORS, TrustAnchorKind};
 use foreign_types_shared::ForeignTypeRef;
 
