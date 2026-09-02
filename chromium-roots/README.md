@@ -1,18 +1,18 @@
 # chromium-roots
 
-chromium-roots publishes the Chrome Root Store as static Rust data.
+[![CI](https://github.com/0x676e67/chromium-roots/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/0x676e67/chromium-roots/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/0x676e67/chromium-roots)](LICENSE)
 
-Normal builds perform no network access, protobuf parsing, signature
-verification, certificate parsing, or code generation. The crate exposes
-rustls-pki-types certificate entries, original DER certificates, Chrome
-constraints, and the requested-trust-anchor identifiers used by BoringSSL.
+A compiled-in snapshot of the Chrome Root Store, generated from Chromium's PKI Metadata component.
 
-The generated source is checked into src/generated.rs. Source authentication and
-regeneration are implemented by the sibling chromium-crs crate.
+This crate provides full DER-encoded root certificates together with Chrome trust constraints and Trust Anchor IDs. It contains static data and does not implement certificate verification.
 
-The btls example shows how to pass the encoded Trust Anchor IDs through btls-sys
-using released btls packages, then verifies that the inspection endpoint
-observed every published ID.
+Applications must update this dependency and rebuild to receive root-store changes.
 
-Project code is licensed under BSD-3-Clause. Generated Chromium data is covered
-by CHROMIUM_LICENSE.
+## Updating
+
+The checked-in source is generated deterministically by [`chromium-crs`](../chromium-crs). Do not edit the generated module by hand.
+
+## License
+
+See [LICENSE](LICENSE) and [NOTICE](NOTICE) for licensing and attribution.
