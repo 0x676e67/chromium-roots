@@ -126,8 +126,6 @@ pub const SOURCE_CRX_SHA256: [u8; 32] = *b"J0\xC2T\x97\xC9\xE6T\xA8\xD7%\t\xE3\x
 pub const SOURCE_CRS_SHA256: [u8; 32] = *b"b|\xFC\xFE\x94\"\xC0HB\x92\x12\xCE\xA2\xE3\xFD.>6\xAA\xC2\xD4\x1E_\xE6\x83\xEB[\x8C\x14\x7F\xF5X";
 /// Chrome Root Store major version used by this snapshot.
 pub const ROOT_STORE_VERSION: i64 = 39i64;
-/// Number of classical X.509 TLS trust anchors in this snapshot.
-pub const TLS_TRUST_ANCHOR_COUNT: usize = 115usize;
 const TRUST_ANCHOR_IDS: &[&[u8]] = &[
     b"\x83\x9Ad\x8C\x9B-\x01\n",
     b"\x83\x9Ad\x8C\x9B-\x01\t",
@@ -158,8 +156,6 @@ const TRUST_ANCHOR_IDS: &[&[u8]] = &[
     b"\x82\xDF\x13\x02\x13",
     b"\x82\xDF\x13\x02\x14",
 ];
-/// Number of unique TLS Trust Anchor IDs in this snapshot.
-pub const TRUST_ANCHOR_ID_COUNT: usize = TRUST_ANCHOR_IDS.len();
 /// Classical X.509 certificates trusted for TLS by this Root Store snapshot.
 ///
 /// Entries retain Chromium source order. Additional certificates are included
@@ -2860,14 +2856,11 @@ pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         enforce_anchor_constraints: true,
     },
 ];
-const ENCODED_TRUST_ANCHOR_IDS_LEN: usize = encoded_trust_anchor_ids_len(
-    TRUST_ANCHOR_IDS,
-);
 /// Length-prefixed Trust Anchor IDs for native
 /// requested-trust-anchor setter APIs.
 ///
 /// IDs use deterministic Chromium source order. The TLS requested list is
 /// semantically unordered, so this byte order is not a Chrome fingerprint.
 pub const ENCODED_TRUST_ANCHOR_IDS: &[u8] = &encode_trust_anchor_ids::<
-    ENCODED_TRUST_ANCHOR_IDS_LEN,
+    { encoded_trust_anchor_ids_len(TRUST_ANCHOR_IDS) },
 >(TRUST_ANCHOR_IDS);

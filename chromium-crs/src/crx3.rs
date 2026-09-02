@@ -10,15 +10,11 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail, ensure};
-use p256::{
-    ecdsa::{Signature as EcdsaSignature, VerifyingKey as EcdsaVerifyingKey},
-    pkcs8::DecodePublicKey as _,
-};
+use p256::ecdsa::{Signature as EcdsaSignature, VerifyingKey as EcdsaVerifyingKey};
 use prost::Message;
 use rsa::{
     RsaPublicKey,
     pkcs1v15::{Signature as RsaSignature, VerifyingKey as RsaVerifyingKey},
-    signature::Verifier as _,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -209,13 +205,16 @@ fn verify_rsa_proof(proof: &AsymmetricKeyProof, signed: &[u8]) -> Result<[u8; 32
         .signature
         .as_deref()
         .context("CRX3 RSA proof has no signature")?;
-    let key = RsaPublicKey::from_public_key_der(public_key)
+    let key = <RsaPublicKey as rsa::pkcs8::DecodePublicKey>::from_public_key_der(public_key)
         .context("CRX3 RSA proof has an invalid SPKI")?;
     let signature =
         RsaSignature::try_from(signature).context("CRX3 RSA signature has invalid length")?;
-    RsaVerifyingKey::<Sha256>::new(key)
-        .verify(signed, &signature)
-        .context("CRX3 RSA signature verification failed")?;
+    rsa::signature::Verifier::verify(
+        &RsaVerifyingKey::<rsa::sha2::Sha256>::new(key),
+        signed,
+        &signature,
+    )
+    .context("CRX3 RSA signature verification failed")?;
     Ok(Sha256::digest(public_key).into())
 }
 
@@ -229,11 +228,11 @@ fn verify_ecdsa_proof(proof: &AsymmetricKeyProof, signed: &[u8]) -> Result<[u8; 
         .signature
         .as_deref()
         .context("CRX3 ECDSA proof has no signature")?;
-    let key = EcdsaVerifyingKey::from_public_key_der(public_key)
+    let key = <EcdsaVerifyingKey as p256::pkcs8::DecodePublicKey>::from_public_key_der(public_key)
         .context("CRX3 ECDSA proof has an invalid SPKI")?;
     let signature =
         EcdsaSignature::from_der(signature).context("CRX3 ECDSA signature is not DER")?;
-    key.verify(signed, &signature)
+    p256::ecdsa::signature::Verifier::verify(&key, signed, &signature)
         .context("CRX3 ECDSA signature verification failed")?;
     Ok(Sha256::digest(public_key).into())
 }

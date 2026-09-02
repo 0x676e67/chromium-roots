@@ -28,7 +28,7 @@ pub(super) fn generate_source(
     let browser_version = Literal::string(source.browser_version());
     let package_hash = Literal::byte_string(source.crx_sha256());
     let payload_hash = Literal::byte_string(source.crs_sha256());
-    let anchor_count = anchors.len();
+
     let trust_anchor_ids = trust_anchor_ids
         .iter()
         .map(|id| Literal::byte_string(id))
@@ -54,15 +54,11 @@ pub(super) fn generate_source(
         #[doc = " Chrome Root Store major version used by this snapshot."]
         pub const ROOT_STORE_VERSION: i64 = #version;
 
-        #[doc = " Number of classical X.509 TLS trust anchors in this snapshot."]
-        pub const TLS_TRUST_ANCHOR_COUNT: usize = #anchor_count;
 
         // Trust Anchor IDs are independent Chromium metadata, not certificate
         // fingerprints. This is their single generated representation.
         const TRUST_ANCHOR_IDS: &[&[u8]] = &[#(#trust_anchor_ids),*];
 
-        #[doc = " Number of unique TLS Trust Anchor IDs in this snapshot."]
-        pub const TRUST_ANCHOR_ID_COUNT: usize = TRUST_ANCHOR_IDS.len();
 
         #[doc = " Classical X.509 certificates trusted for TLS by this Root Store snapshot."]
         #[doc = " "]
@@ -77,8 +73,6 @@ pub(super) fn generate_source(
             #(#anchor_items),*
         ];
 
-        const ENCODED_TRUST_ANCHOR_IDS_LEN: usize =
-            encoded_trust_anchor_ids_len(TRUST_ANCHOR_IDS);
 
         #[doc = " Length-prefixed Trust Anchor IDs for native"]
         #[doc = " requested-trust-anchor setter APIs."]
@@ -86,7 +80,9 @@ pub(super) fn generate_source(
         #[doc = " IDs use deterministic Chromium source order. The TLS requested list is"]
         #[doc = " semantically unordered, so this byte order is not a Chrome fingerprint."]
         pub const ENCODED_TRUST_ANCHOR_IDS: &[u8] =
-            &encode_trust_anchor_ids::<ENCODED_TRUST_ANCHOR_IDS_LEN>(TRUST_ANCHOR_IDS);
+            &encode_trust_anchor_ids::<
+                { encoded_trust_anchor_ids_len(TRUST_ANCHOR_IDS) }
+            >(TRUST_ANCHOR_IDS);
     };
     let syntax = syn::parse2(tokens).context("generated Root Store source is invalid Rust")?;
     let mut source =

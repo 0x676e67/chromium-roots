@@ -1,8 +1,8 @@
 //! Validates Trust Anchor ID lookup and wire-format generation.
 
 use chromium_roots::{
-    ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, TRUST_ANCHOR_ID_COUNT,
-    trust_anchor_id_for_certificate, trust_anchor_ids,
+    ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS,
+    trust_anchor_id_for_certificate,
 };
 
 fn decode_wire_ids(mut encoded: &[u8]) -> Vec<&[u8]> {
@@ -22,28 +22,25 @@ fn decode_wire_ids(mut encoded: &[u8]) -> Vec<&[u8]> {
 }
 
 #[test]
-fn trust_anchor_id_iterator_matches_wire_encoding() {
+fn trust_anchor_id_metadata_matches_wire_encoding() {
     let decoded = decode_wire_ids(ENCODED_TRUST_ANCHOR_IDS);
-    let iterated = trust_anchor_ids().collect::<Vec<_>>();
-
-    assert!(!decoded.is_empty());
-    assert_eq!(iterated.len(), TRUST_ANCHOR_ID_COUNT);
-    assert_eq!(iterated, decoded);
-
-    let mut unique = iterated.clone();
-    unique.sort_unstable();
-    unique.dedup();
-    assert_eq!(
-        unique.len(),
-        iterated.len(),
-        "Trust Anchor IDs must be unique"
-    );
-
     let mapped = TLS_TRUST_ANCHORS
         .iter()
         .filter_map(|anchor| anchor.trust_anchor_id)
         .collect::<Vec<_>>();
+
+    assert!(!decoded.is_empty());
+
     assert_eq!(mapped, decoded, "every published ID must map exactly once");
+
+    let mut unique = mapped.clone();
+    unique.sort_unstable();
+    unique.dedup();
+    assert_eq!(
+        unique.len(),
+        mapped.len(),
+        "Trust Anchor IDs must be unique"
+    );
 }
 
 #[test]

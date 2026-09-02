@@ -137,26 +137,13 @@ pub fn trust_anchor_id_for_certificate(certificate_der: &[u8]) -> Option<&'stati
         .and_then(|anchor| anchor.trust_anchor_id)
 }
 
-/// Iterates over DER-encoded TLS trust-anchor certificates.
-#[must_use]
-pub fn certificates() -> impl ExactSizeIterator<Item = &'static [u8]> + DoubleEndedIterator {
-    TLS_TRUST_ANCHORS.iter().map(|anchor| anchor.der)
-}
-
-/// Iterates over the unique Trust Anchor IDs in deterministic source order.
-#[must_use]
-pub fn trust_anchor_ids() -> impl ExactSizeIterator<Item = &'static [u8]> + DoubleEndedIterator {
-    TRUST_ANCHOR_IDS.iter().copied()
-}
-
 #[cfg(test)]
 mod tests {
     use super::{encode_trust_anchor_ids, encoded_trust_anchor_ids_len};
 
     const TEST_IDS: &[&[u8]] = &[b"\x01", b"\x02\x03"];
-    const TEST_ENCODED_LEN: usize = encoded_trust_anchor_ids_len(TEST_IDS);
-    const TEST_ENCODED: [u8; TEST_ENCODED_LEN] =
-        encode_trust_anchor_ids::<TEST_ENCODED_LEN>(TEST_IDS);
+    const TEST_ENCODED: [u8; encoded_trust_anchor_ids_len(TEST_IDS)] =
+        encode_trust_anchor_ids::<{ encoded_trust_anchor_ids_len(TEST_IDS) }>(TEST_IDS);
 
     #[test]
     fn compile_time_encoder_adds_eight_bit_lengths() {
