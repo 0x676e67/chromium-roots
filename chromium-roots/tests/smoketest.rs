@@ -3,7 +3,7 @@
 // Test scope adapted from rustls/webpki-roots' webpki-root-certs smoke test:
 // https://github.com/rustls/webpki-roots/blob/main/webpki-root-certs/tests/smoketest.rs
 
-use chromium_root_certs::{TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS};
+use chromium_roots::{TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS};
 
 #[test]
 fn every_tls_root_is_a_valid_ca_and_webpki_anchor() {

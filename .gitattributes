@@ -2,4 +2,4 @@
 *.toml text eol=lf
 *.md text eol=lf
 *.yml text eol=lf
-build/deps/*.pb binary
+chromium-crs/data/*.pb binary

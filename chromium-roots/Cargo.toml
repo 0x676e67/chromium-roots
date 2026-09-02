@@ -1,11 +1,11 @@
 [package]
-name = "chromium-root-certs"
+name = "chromium-roots"
 version = "0.1.0"
 edition = { workspace = true }
 rust-version = { workspace = true }
 authors = { workspace = true }
 description = "A maintainable Rust snapshot of the Chromium Root Store"
-documentation = "https://docs.rs/chromium-root-certs"
+documentation = "https://docs.rs/chromium-roots"
 repository = { workspace = true }
 readme = "README.md"
 license = { workspace = true }
@@ -14,7 +14,7 @@ categories = ["cryptography", "web-programming"]
 include = [
     "src/**",
     "tests/**",
-    "examples/btls.rs",
+    "examples/**",
     "Cargo.toml",
     "README.md",
     "LICENSE",
@@ -24,15 +24,16 @@ include = [
 
 [dependencies]
 rustls-pki-types = { workspace = true }
-btls = { version = "=0.5.6", optional = true }
-btls-sys = { version = "=0.5.6", optional = true }
 
 [dev-dependencies]
+btls = "=0.5.6"
+btls-sys = "=0.5.6"
+foreign-types-shared = "0.3"
 webpki = { workspace = true }
 x509-parser = { workspace = true }
 
 [features]
-btls-example = ["dep:btls", "dep:btls-sys"]
+btls-example = []
 
 [[example]]
 name = "btls"

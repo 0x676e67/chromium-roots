@@ -22,10 +22,10 @@ jobs:
       CMAKE_GENERATOR: Unix Makefiles
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Install Rust 1.85
-        uses: dtolnay/rust-toolchain@1.85.0
+      - name: Install Rust 1.98
+        uses: dtolnay/rust-toolchain@1.98.0
         with:
           components: clippy, rustfmt
 
@@ -39,7 +39,7 @@ jobs:
           if git diff --quiet -- \
             chromium-crs/data/crs.pb \
             chromium-crs/data/SOURCE.toml \
-            chromium-root-certs/src/generated.rs; then
+            chromium-roots/src/generated.rs; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -67,11 +67,11 @@ jobs:
 
       - name: Check the publishable package
         if: steps.changes.outputs.changed == 'true'
-        run: cargo package --locked --allow-dirty -p chromium-root-certs
+        run: cargo package --locked --allow-dirty -p chromium-roots
 
       - name: Run the btls integration example
         if: steps.changes.outputs.changed == 'true'
-        run: cargo run --locked -p chromium-root-certs --example btls --features btls-example
+        run: cargo run --locked -p chromium-roots --example btls --features btls-example
 
       - name: Upload the reviewed update candidate
         if: steps.changes.outputs.changed == 'true'
@@ -81,7 +81,7 @@ jobs:
           path: |
             chromium-crs/data/crs.pb
             chromium-crs/data/SOURCE.toml
-            chromium-root-certs/src/generated.rs
+            chromium-roots/src/generated.rs
           if-no-files-found: error
           retention-days: 14
 

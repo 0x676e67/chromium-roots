@@ -17,8 +17,8 @@ pub(super) struct ValidatedTrustAnchor<'a> {
     pub(super) metadata: &'a TrustAnchor,
     /// SHA-256 of the complete DER certificate.
     pub(super) sha256: [u8; 32],
-    /// Index into the generated unique Trust Anchor ID list.
-    pub(super) trust_anchor_id_index: Option<usize>,
+    /// Validated Trust Anchor ID published for this TLS anchor.
+    pub(super) trust_anchor_id: Option<&'a [u8]>,
 }
 
 /// Deterministic output and summary produced by the generator.
@@ -64,8 +64,7 @@ pub(crate) fn generate_component(source: &SourceMetadata, crs: &[u8]) -> Result<
         "encoded Trust Anchor ID list exceeds the TLS vector limit"
     );
 
-    let source_code =
-        codegen::generate_source(source, parsed.version, &validated, &trust_anchor_ids)?;
+    let source_code = codegen::generate_source(source, parsed.version, &validated)?;
 
     Ok(GeneratedLibrary {
         source: source_code,
@@ -91,7 +90,7 @@ fn validate_anchors(
             validate_certificate_der(&anchor.der)?
         };
 
-        let trust_anchor_id_index = if let Some(id) = anchor.trust_anchor_id.as_deref() {
+        let trust_anchor_id = if let Some(id) = anchor.trust_anchor_id.as_deref() {
             validate_trust_anchor_id(id)?;
             ensure!(
                 seen_ids.insert(id),
@@ -100,9 +99,8 @@ fn validate_anchors(
             );
 
             if anchor.tls_trust_anchor {
-                let index = trust_anchor_ids.len();
                 trust_anchor_ids.push(id);
-                Some(index)
+                Some(id)
             } else {
                 None
             }
@@ -119,7 +117,7 @@ fn validate_anchors(
             validated.push(ValidatedTrustAnchor {
                 metadata: anchor,
                 sha256: hash,
-                trust_anchor_id_index,
+                trust_anchor_id,
             });
         }
     }
@@ -133,7 +131,7 @@ fn validate_anchors(
 
 /// Writes generated static data only when it differs.
 pub(crate) fn write_generated_source(root: &Path, source: &str) -> Result<bool> {
-    let path = root.join("chromium-root-certs/src/generated.rs");
+    let path = root.join("chromium-roots/src/generated.rs");
     if fs::read_to_string(&path).ok().as_deref() == Some(source) {
         return Ok(false);
     }
@@ -143,12 +141,12 @@ pub(crate) fn write_generated_source(root: &Path, source: &str) -> Result<bool> 
 
 /// Ensures the public static data matches the checked-in component.
 pub(crate) fn ensure_generated_source_current(root: &Path, source: &str) -> Result<()> {
-    let path = root.join("chromium-root-certs/src/generated.rs");
+    let path = root.join("chromium-roots/src/generated.rs");
     let checked_in =
         fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
     ensure!(
         checked_in == source,
-        "chromium-root-certs/src/generated.rs is stale; run cargo run -p chromium-crs -- generate"
+        "chromium-roots/src/generated.rs is stale; run cargo run -p chromium-crs -- generate"
     );
     Ok(())
 }
@@ -318,6 +316,23 @@ source = "https://clients2.google.com/service/update2/crx"
         assert!(error.to_string().contains("invalid X.509 certificate"));
     }
 
+    #[test]
+    fn non_tls_trust_anchor_ids_are_validated_before_filtering() {
+        let mut anchors = checked_in_anchors();
+        let anchor = anchors
+            .iter_mut()
+            .find(|anchor| !anchor.tls_trust_anchor)
+            .expect("checked-in component contains a non-TLS anchor");
+        anchor.trust_anchor_id = Some(Vec::new());
+
+        let error = validate_anchors(&anchors)
+            .err()
+            .expect("invalid non-TLS Trust Anchor ID must fail");
+        assert!(
+            error.to_string().contains("Trust Anchor ID"),
+            "unexpected error: {error:#}"
+        );
+    }
     #[test]
     fn duplicate_trust_anchor_ids_are_rejected() {
         let mut anchors = checked_in_anchors();

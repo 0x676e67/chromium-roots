@@ -7,6 +7,6 @@ This directory belongs to the chromium-crs maintenance crate.
 - SOURCE.toml records component identity, versions, URLs, and SHA-256 digests.
 - CHROMIUM_LICENSE is the upstream license distributed with the source data.
 
-The published chromium-root-certs crate does not read this directory during
+The published chromium-roots crate does not read this directory during
 builds. Regenerate or update these files through the chromium-crs binary;
 do not edit them by hand.

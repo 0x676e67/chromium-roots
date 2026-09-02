@@ -1,51 +1,21 @@
-# chromium-root-certs
+# chromium-roots
 
-This repository is a two-crate Rust workspace for maintaining and publishing a
-Chromium Root Store snapshot.
+[![CI](https://github.com/0x676e67/chromium-roots/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/0x676e67/chromium-roots/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/0x676e67/chromium-roots)](LICENSE)
 
-## Workspace layout
+A compiled-in snapshot of the Chrome Root Store, generated from Chromium's PKI Metadata component.
 
-- chromium-root-certs is the published, no_std runtime crate. It contains only
-  checked-in rustls-pki-types certificate entries, Chrome constraints, and Trust
-  Anchor IDs.
-- chromium-crs is the unpublished maintenance crate. Its library
-  authenticates and parses Chromium source data, while its binary updates and
-  regenerates the published crate.
+The public crate includes full DER-encoded root certificates, Chrome trust constraints, and Trust Anchor IDs. It provides static root data and does not implement certificate verification.
 
-The repository root is a virtual Cargo workspace and is not itself a package.
-This keeps runtime dependencies separate from network, protobuf, archive, and
-code-generation dependencies.
+Applications must update the crate and rebuild to receive root-store changes.
 
-## Updating the snapshot
+## Workspace
 
-Run these commands from the workspace root:
+- [`chromium-roots`](chromium-roots): generated data for TLS clients.
+- [`chromium-crs`](chromium-crs): source retrieval, validation, and deterministic generation.
 
-    cargo run -p chromium-crs -- update
-    cargo run -p chromium-crs -- generate
-    cargo run -p chromium-crs -- check
-
-update downloads and authenticates the current Chrome PKI Metadata component.
-generate rebuilds the static Rust source from the checked-in component payload.
-check verifies that the payload, source lock, and generated source agree.
-
-Authenticated maintenance inputs live under chromium-crs/data. Generated
-runtime data lives under chromium-root-certs/src.
-
-The weekly GitHub workflow performs the network update and uploads changed files
-as an artifact. It does not commit or push changes.
-
-Generation validates every DER certificate and Trust Anchor ID in the signed
-component before filtering the TLS roots that the runtime crate publishes.
-Duplicate IDs and ambiguous provenance fields are rejected.
-
-## Validation
-
-    cargo fmt --all
-    cargo test --workspace
-    cargo clippy --workspace --all-targets -- -D warnings
-    cargo run -p chromium-crs -- check
+The scheduled GitHub workflow checks for upstream changes each week. See the [`chromium-crs` documentation](chromium-crs/README.md) for manual update commands and source details.
 
 ## License
 
-Project code is licensed under BSD-3-Clause. Imported Chromium data remains
-subject to the license included with each crate.
+See [LICENSE](LICENSE) and [NOTICE](NOTICE) for licensing and attribution.

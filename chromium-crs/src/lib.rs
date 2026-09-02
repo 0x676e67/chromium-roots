@@ -1,9 +1,8 @@
-#![forbid(unsafe_code)]
 //! Authenticated source model for the Chrome Root Store.
 //!
 //! This crate is the upstream-facing half of the workspace. It owns Chrome PKI
 //! Metadata downloads, CRX3 verification, protobuf decoding, and certificate
-//! validation. The sibling chromium-root-certs crate contains only generated
+//! validation. The sibling chromium-roots crate contains only generated
 //! static data and its public lookup API.
 
 use anyhow::{Result, ensure};
@@ -44,20 +43,28 @@ pub enum TrustAnchorKind {
 pub struct ConstraintSet {
     /// Latest accepted timestamp for at least one valid SCT.
     pub sct_not_after_sec: Option<i64>,
+
     /// Exclusive lower timestamp bound for every valid SCT.
     pub sct_all_after_sec: Option<i64>,
+
     /// Inclusive minimum Chrome version.
     pub min_version: Option<String>,
+
     /// Exclusive maximum Chrome version.
     pub max_version_exclusive: Option<String>,
+
     /// Permitted DNS subtrees for every leaf subject alternative name.
     pub permitted_dns_names: Vec<String>,
+
     /// Inclusive maximum Merkle Tree Certificate index.
     pub index_not_after: Option<u64>,
+
     /// Exclusive minimum Merkle Tree Certificate index.
     pub index_after: Option<u64>,
+
     /// Latest accepted leaf certificate validity start.
     pub validity_starts_not_after_sec: Option<i64>,
+
     /// Exclusive lower bound for the leaf certificate validity start.
     pub validity_starts_after_sec: Option<i64>,
 }
@@ -72,24 +79,34 @@ pub struct ConstraintSet {
 pub struct TrustAnchor {
     /// Source list containing the entry.
     pub kind: TrustAnchorKind,
+
     /// Complete DER-encoded certificate.
     pub der: Vec<u8>,
+
     /// Extended Validation policy object identifiers.
     pub ev_policy_oids: Vec<String>,
+
     /// Alternative Chrome-specific constraint sets.
     pub constraints: Vec<ConstraintSet>,
+
     /// Optional human-readable name.
     pub display_name: Option<String>,
+
     /// Whether the anchor may issue qualified website certificates.
     pub eutl: bool,
+
     /// Whether Chrome enforces the anchor validity period.
     pub enforce_anchor_expiry: bool,
+
     /// Whether Chrome enforces constraints encoded in the anchor.
     pub enforce_anchor_constraints: bool,
+
     /// Whether the entry is a TLS trust anchor.
     pub tls_trust_anchor: bool,
+
     /// Binary relative object identifier advertised by the TLS extension.
     pub trust_anchor_id: Option<Vec<u8>>,
+
     /// Stable Chrome Root Store identifier.
     pub crs_root_id: Option<i32>,
 }
@@ -118,6 +135,7 @@ impl TrustAnchor {
 pub struct RootStore {
     /// Monotonically increasing Chrome Root Store major version.
     pub version: i64,
+
     /// Classical certificate entries in signed source order.
     pub anchors: Vec<TrustAnchor>,
 }

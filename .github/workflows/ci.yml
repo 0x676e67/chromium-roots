@@ -20,21 +20,21 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Lint workflows
         uses: docker://rhysd/actionlint:1.7.7
 
   msrv:
-    name: Rust 1.85
+    name: Rust 1.98
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Install Rust 1.85
-        uses: dtolnay/rust-toolchain@1.85.0
+      - name: Install Rust 1.98
+        uses: dtolnay/rust-toolchain@1.98.0
 
       - name: Check minimum supported Rust version
         run: cargo check --workspace --all-targets --locked
@@ -47,7 +47,7 @@ jobs:
       RUSTDOCFLAGS: -D warnings
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -73,7 +73,7 @@ jobs:
         run: cargo run --locked -p chromium-crs -- check
 
       - name: Check the publishable package
-        run: cargo package --locked -p chromium-root-certs
+        run: cargo package --locked -p chromium-roots
 
   btls-example:
     name: btls integration example
@@ -83,10 +83,10 @@ jobs:
       CMAKE_GENERATOR: Unix Makefiles
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run the btls integration example
-        run: cargo run --locked -p chromium-root-certs --example btls --features btls-example
+        run: cargo run --locked -p chromium-roots --example btls --features btls-example

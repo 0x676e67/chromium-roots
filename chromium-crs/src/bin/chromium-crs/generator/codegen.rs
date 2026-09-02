@@ -16,7 +16,6 @@ pub(super) fn generate_source(
     source: &SourceMetadata,
     version: i64,
     anchors: &[ValidatedTrustAnchor<'_>],
-    trust_anchor_ids: &[&[u8]],
 ) -> Result<String> {
     let GeneratedAnchorTokens {
         certificate_items,
@@ -28,11 +27,7 @@ pub(super) fn generate_source(
     let browser_version = Literal::string(source.browser_version());
     let package_hash = Literal::byte_string(source.crx_sha256());
     let payload_hash = Literal::byte_string(source.crs_sha256());
-    let anchor_count = anchors.len();
-    let trust_anchor_ids = trust_anchor_ids
-        .iter()
-        .map(|id| Literal::byte_string(id))
-        .collect::<Vec<_>>();
+
     let tokens = quote! {
         #(#certificate_items)*
 
@@ -54,15 +49,7 @@ pub(super) fn generate_source(
         #[doc = " Chrome Root Store major version used by this snapshot."]
         pub const ROOT_STORE_VERSION: i64 = #version;
 
-        #[doc = " Number of classical X.509 TLS trust anchors in this snapshot."]
-        pub const TLS_TRUST_ANCHOR_COUNT: usize = #anchor_count;
 
-        // Trust Anchor IDs are independent Chromium metadata, not certificate
-        // fingerprints. This is their single generated representation.
-        const TRUST_ANCHOR_IDS: &[&[u8]] = &[#(#trust_anchor_ids),*];
-
-        #[doc = " Number of unique TLS Trust Anchor IDs in this snapshot."]
-        pub const TRUST_ANCHOR_ID_COUNT: usize = TRUST_ANCHOR_IDS.len();
 
         #[doc = " Classical X.509 certificates trusted for TLS by this Root Store snapshot."]
         #[doc = " "]
@@ -72,13 +59,12 @@ pub(super) fn generate_source(
             #(rustls_pki_types::CertificateDer::from_slice(#certificate_names)),*
         ];
 
-        #[doc = " Chromium TLS trust anchors and their source metadata."]
-        pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
+        const TLS_TRUST_ANCHORS_DATA: &[TrustAnchor] = &[
             #(#anchor_items),*
         ];
 
-        const ENCODED_TRUST_ANCHOR_IDS_LEN: usize =
-            encoded_trust_anchor_ids_len(TRUST_ANCHOR_IDS);
+        #[doc = " Chromium TLS trust anchors and their source metadata."]
+        pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = TLS_TRUST_ANCHORS_DATA;
 
         #[doc = " Length-prefixed Trust Anchor IDs for native"]
         #[doc = " requested-trust-anchor setter APIs."]
@@ -86,7 +72,9 @@ pub(super) fn generate_source(
         #[doc = " IDs use deterministic Chromium source order. The TLS requested list is"]
         #[doc = " semantically unordered, so this byte order is not a Chrome fingerprint."]
         pub const ENCODED_TRUST_ANCHOR_IDS: &[u8] =
-            &encode_trust_anchor_ids::<ENCODED_TRUST_ANCHOR_IDS_LEN>(TRUST_ANCHOR_IDS);
+            &encode_trust_anchor_ids::<
+                { encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS_DATA) }
+            >(TLS_TRUST_ANCHORS_DATA);
     };
     let syntax = syn::parse2(tokens).context("generated Root Store source is invalid Rust")?;
     let mut source =
@@ -121,10 +109,7 @@ fn generate_anchor_tokens(anchors: &[ValidatedTrustAnchor<'_>]) -> GeneratedAnch
             TrustAnchorKind::Additional => quote!(TrustAnchorKind::Additional),
         };
         let crs_root_id = optional_number(anchor.crs_root_id);
-        let trust_anchor_id = validated.trust_anchor_id_index.map_or_else(
-            || quote!(None),
-            |index| quote!(Some(TRUST_ANCHOR_IDS[#index])),
-        );
+        let trust_anchor_id = optional_bytes(validated.trust_anchor_id);
         let constraints = anchor
             .constraints
             .iter()
@@ -267,6 +252,16 @@ fn integer_literal(value: u128, suffix: &str) -> LitInt {
 }
 
 /// Quotes an optional string as source tokens.
+fn optional_bytes(value: Option<&[u8]>) -> TokenStream {
+    value.map_or_else(
+        || quote!(None),
+        |value| {
+            let value = Literal::byte_string(value);
+            quote!(Some(#value))
+        },
+    )
+}
+
 fn optional_string(value: Option<&str>) -> TokenStream {
     value.map_or_else(
         || quote!(None),
