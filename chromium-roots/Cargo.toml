@@ -1,11 +1,11 @@
 [package]
-name = "chromium-root-certs"
+name = "chromium-roots"
 version = "0.1.0"
 edition = { workspace = true }
 rust-version = { workspace = true }
 authors = { workspace = true }
 description = "A maintainable Rust snapshot of the Chromium Root Store"
-documentation = "https://docs.rs/chromium-root-certs"
+documentation = "https://docs.rs/chromium-roots"
 repository = { workspace = true }
 readme = "README.md"
 license = { workspace = true }

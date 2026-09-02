@@ -1,6 +1,6 @@
 //! Validates Trust Anchor ID lookup and wire-format generation.
 
-use chromium_root_certs::{
+use chromium_roots::{
     ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, TRUST_ANCHOR_ID_COUNT,
     trust_anchor_id_for_certificate, trust_anchor_ids,
 };

@@ -1,4 +1,4 @@
-chromium-root-certs
+chromium-roots
 
 The generated root certificate data and associated metadata are derived from
 the Chromium project and retain Chromium's BSD 3-Clause license. The exact

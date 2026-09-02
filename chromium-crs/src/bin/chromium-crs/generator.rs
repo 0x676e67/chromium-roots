@@ -133,7 +133,7 @@ fn validate_anchors(
 
 /// Writes generated static data only when it differs.
 pub(crate) fn write_generated_source(root: &Path, source: &str) -> Result<bool> {
-    let path = root.join("chromium-root-certs/src/generated.rs");
+    let path = root.join("chromium-roots/src/generated.rs");
     if fs::read_to_string(&path).ok().as_deref() == Some(source) {
         return Ok(false);
     }
@@ -143,12 +143,12 @@ pub(crate) fn write_generated_source(root: &Path, source: &str) -> Result<bool> 
 
 /// Ensures the public static data matches the checked-in component.
 pub(crate) fn ensure_generated_source_current(root: &Path, source: &str) -> Result<()> {
-    let path = root.join("chromium-root-certs/src/generated.rs");
+    let path = root.join("chromium-roots/src/generated.rs");
     let checked_in =
         fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
     ensure!(
         checked_in == source,
-        "chromium-root-certs/src/generated.rs is stale; run cargo run -p chromium-crs -- generate"
+        "chromium-roots/src/generated.rs is stale; run cargo run -p chromium-crs -- generate"
     );
     Ok(())
 }

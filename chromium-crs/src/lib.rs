@@ -3,7 +3,7 @@
 //!
 //! This crate is the upstream-facing half of the workspace. It owns Chrome PKI
 //! Metadata downloads, CRX3 verification, protobuf decoding, and certificate
-//! validation. The sibling chromium-root-certs crate contains only generated
+//! validation. The sibling chromium-roots crate contains only generated
 //! static data and its public lookup API.
 
 use anyhow::{Result, ensure};

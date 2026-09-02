@@ -1,11 +1,11 @@
-# chromium-root-certs
+# chromium-roots
 
 This repository is a two-crate Rust workspace for maintaining and publishing a
 Chromium Root Store snapshot.
 
 ## Workspace layout
 
-- chromium-root-certs is the published, no_std runtime crate. It contains only
+- chromium-roots is the published, no_std runtime crate. It contains only
   checked-in rustls-pki-types certificate entries, Chrome constraints, and Trust
   Anchor IDs.
 - chromium-crs is the unpublished maintenance crate. Its library
@@ -29,7 +29,7 @@ generate rebuilds the static Rust source from the checked-in component payload.
 check verifies that the payload, source lock, and generated source agree.
 
 Authenticated maintenance inputs live under chromium-crs/data. Generated
-runtime data lives under chromium-root-certs/src.
+runtime data lives under chromium-roots/src.
 
 The weekly GitHub workflow performs the network update and uploads changed files
 as an artifact. It does not commit or push changes.

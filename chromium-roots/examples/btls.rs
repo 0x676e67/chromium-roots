@@ -10,7 +10,7 @@ use std::time::Duration;
 use btls::ssl::{SslConnector, SslContextBuilder, SslMethod};
 use btls::x509::X509;
 use btls::x509::store::X509StoreBuilder;
-use chromium_root_certs::{ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, trust_anchor_ids};
+use chromium_roots::{ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, trust_anchor_ids};
 
 const HOST: &str = "pingly.us.kg";
 const ADDRESS: &str = "pingly.us.kg:443";

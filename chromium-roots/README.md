@@ -1,6 +1,6 @@
-# chromium-root-certs
+# chromium-roots
 
-chromium-root-certs publishes the Chrome Root Store as static Rust data.
+chromium-roots publishes the Chrome Root Store as static Rust data.
 
 Normal builds perform no network access, protobuf parsing, signature
 verification, certificate parsing, or code generation. The crate exposes

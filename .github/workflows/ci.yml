@@ -73,7 +73,7 @@ jobs:
         run: cargo run --locked -p chromium-crs -- check
 
       - name: Check the publishable package
-        run: cargo package --locked -p chromium-root-certs
+        run: cargo package --locked -p chromium-roots
 
   btls-example:
     name: btls integration example
@@ -89,4 +89,4 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run the btls integration example
-        run: cargo run --locked -p chromium-root-certs --example btls --features btls-example
+        run: cargo run --locked -p chromium-roots --example btls --features btls-example

@@ -1,7 +1,7 @@
 # chromium-crs
 
 chromium-crs is the unpublished maintenance crate for
-chromium-root-certs.
+chromium-roots.
 
 The library owns the Chrome PKI Metadata component model, CRX3 authentication,
 protobuf schema validation, X.509 validation, and Trust Anchor ID validation.
