@@ -1,5 +1,4 @@
 #![no_std]
-#![forbid(unsafe_code)]
 //! Static classical X.509 TLS trust anchors from the Chromium Root Store.
 //!
 //! Cargo generates the data from an authenticated Chrome PKI Metadata snapshot
@@ -32,20 +31,28 @@ pub enum TrustAnchorKind {
 pub struct RootConstraint {
     /// Latest accepted SCT timestamp, in seconds since the Unix epoch.
     pub sct_not_after_sec: Option<i64>,
+
     /// Exclusive lower bound for every valid SCT, in seconds since the Unix epoch.
     pub sct_all_after_sec: Option<i64>,
+
     /// Inclusive minimum Chrome version.
     pub min_version: Option<&'static str>,
+
     /// Exclusive maximum Chrome version.
     pub max_version_exclusive: Option<&'static str>,
+
     /// Permitted DNS subtrees for every leaf subject alternative name.
     pub permitted_dns_names: &'static [&'static str],
+
     /// Inclusive maximum Merkle Tree Certificate index.
     pub index_not_after: Option<u64>,
+
     /// Exclusive minimum Merkle Tree Certificate index.
     pub index_after: Option<u64>,
+
     /// Latest accepted leaf `notBefore`, in seconds since the Unix epoch.
     pub validity_starts_not_after_sec: Option<i64>,
+
     /// Exclusive lower bound for leaf `notBefore`, in seconds since the Unix epoch.
     pub validity_starts_after_sec: Option<i64>,
 }
@@ -56,24 +63,34 @@ pub struct RootConstraint {
 pub struct TrustAnchor {
     /// DER-encoded certificate.
     pub der: &'static [u8],
+
     /// SHA-256 digest of the complete DER certificate.
     pub sha256: [u8; 32],
+
     /// Source list containing this certificate.
     pub kind: TrustAnchorKind,
+
     /// Stable identifier assigned by the Chrome Root Store.
     pub crs_root_id: Option<i32>,
+
     /// Binary relative-OID Trust Anchor ID, without DER tag and length.
     pub trust_anchor_id: Option<&'static [u8]>,
+
     /// Chrome-specific alternative constraint sets.
     pub constraints: &'static [RootConstraint],
+
     /// Extended Validation policy OIDs associated with this anchor.
     pub ev_policy_oids: &'static [&'static str],
+
     /// Optional display name supplied by Chromium metadata.
     pub display_name: Option<&'static str>,
+
     /// Whether Chromium marks this anchor for the EU Trusted List.
     pub eutl: bool,
+
     /// Whether the anchor certificate's validity period must be enforced.
     pub enforce_anchor_expiry: bool,
+
     /// Whether X.509 constraints encoded in the anchor must be enforced.
     pub enforce_anchor_constraints: bool,
 }
