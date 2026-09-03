@@ -43,12 +43,15 @@ struct CrxFileHeader {
     /// RSA PKCS1 SHA-256 signature proofs.
     #[prost(message, repeated, tag = "2")]
     sha256_with_rsa: Vec<AsymmetricKeyProof>,
+
     /// P-256 SHA-256 signature proofs.
     #[prost(message, repeated, tag = "3")]
     sha256_with_ecdsa: Vec<AsymmetricKeyProof>,
+
     /// Optional verified-contents metadata not needed for package identity.
     #[prost(bytes = "vec", optional, tag = "4")]
     verified_contents: Option<Vec<u8>>,
+
     /// Serialized signed-data message covered by every proof.
     #[prost(bytes = "vec", optional, tag = "10000")]
     signed_header_data: Option<Vec<u8>>,
@@ -60,6 +63,7 @@ struct AsymmetricKeyProof {
     /// DER public-key information.
     #[prost(bytes = "vec", optional, tag = "1")]
     public_key: Option<Vec<u8>>,
+
     /// Algorithm-specific signature bytes.
     #[prost(bytes = "vec", optional, tag = "2")]
     signature: Option<Vec<u8>>,
@@ -77,10 +81,13 @@ struct SignedData {
 pub(super) struct VerifiedPackage {
     /// Version declared by the signed manifest.
     pub(super) component_version: String,
+
     /// Serialized Root Store payload.
     pub(super) crs: Vec<u8>,
+
     /// SHA-256 of the complete CRX3 package.
     pub(super) crx_sha256: [u8; 32],
+
     /// SHA-256 of the extracted Root Store payload.
     pub(super) crs_sha256: [u8; 32],
 }

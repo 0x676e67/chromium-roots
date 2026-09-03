@@ -15,6 +15,7 @@ use crate::{
 };
 
 const VERSION_HISTORY_URL: &str = "https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions?page_size=1&order_by=version%20desc";
+
 /// Chrome component update endpoint recorded in snapshot provenance.
 pub const COMPONENT_UPDATE_URL: &str = "https://clients2.google.com/service/update2/crx";
 const MAX_JSON_BYTES: u64 = 1 << 20;

@@ -15,8 +15,10 @@ use chromium_crs::{
 pub(super) struct ValidatedTrustAnchor<'a> {
     /// Original signed metadata.
     pub(super) metadata: &'a TrustAnchor,
+
     /// SHA-256 of the complete DER certificate.
     pub(super) sha256: [u8; 32],
+
     /// Validated Trust Anchor ID published for this TLS anchor.
     pub(super) trust_anchor_id: Option<&'a [u8]>,
 }
@@ -25,10 +27,13 @@ pub(super) struct ValidatedTrustAnchor<'a> {
 pub(crate) struct GeneratedLibrary {
     /// Formatted Rust source for the public data crate.
     pub(crate) source: String,
+
     /// Signed Chrome Root Store major version.
     pub(crate) root_store_version: i64,
+
     /// Number of classical X.509 TLS trust anchors.
     pub(crate) anchor_count: usize,
+
     /// Number of unique Trust Anchor IDs.
     pub(crate) id_count: usize,
 }
@@ -333,6 +338,7 @@ source = "https://clients2.google.com/service/update2/crx"
             "unexpected error: {error:#}"
         );
     }
+
     #[test]
     fn duplicate_trust_anchor_ids_are_rejected() {
         let mut anchors = checked_in_anchors();

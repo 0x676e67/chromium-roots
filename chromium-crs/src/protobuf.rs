@@ -19,12 +19,15 @@ struct RootStoreMessage {
     /// Historical list of classical TLS trust anchors.
     #[prost(message, repeated, tag = "1")]
     trust_anchors: Vec<TrustAnchorMessage>,
+
     /// Monotonically increasing major store version.
     #[prost(int64, tag = "2")]
     version_major: i64,
+
     /// Certificates carrying explicit trust-purpose metadata.
     #[prost(message, repeated, tag = "3")]
     additional_certs: Vec<TrustAnchorMessage>,
+
     /// Merkle Tree Certificate anchors, retained for schema validation.
     #[prost(message, repeated, tag = "4")]
     mtc_anchors: Vec<MtcAnchorMessage>,
@@ -36,30 +39,39 @@ struct TrustAnchorMessage {
     /// DER certificate in components, or a source-only fingerprint in text data.
     #[prost(oneof = "certificate::Value", tags = "1, 2")]
     certificate: Option<certificate::Value>,
+
     /// Extended Validation policy object identifiers.
     #[prost(string, repeated, tag = "3")]
     ev_policy_oids: Vec<String>,
+
     /// Alternative sets of Chrome-specific constraints.
     #[prost(message, repeated, tag = "4")]
     constraints: Vec<ConstraintSetMessage>,
+
     /// Human-readable certificate name.
     #[prost(string, optional, tag = "5")]
     display_name: Option<String>,
+
     /// Whether the anchor may issue qualified website certificates.
     #[prost(bool, optional, tag = "6")]
     eutl: Option<bool>,
+
     /// Whether Chrome enforces the anchor certificate validity period.
     #[prost(bool, optional, tag = "8")]
     enforce_anchor_expiry: Option<bool>,
+
     /// Whether Chrome enforces constraints encoded in the anchor certificate.
     #[prost(bool, optional, tag = "9")]
     enforce_anchor_constraints: Option<bool>,
+
     /// Explicit TLS trust purpose for entries outside the historical root list.
     #[prost(bool, optional, tag = "10")]
     tls_trust_anchor: Option<bool>,
+
     /// Binary relative object identifier used by the TLS extension.
     #[prost(bytes = "vec", optional, tag = "11")]
     trust_anchor_id: Option<Vec<u8>>,
+
     /// Stable Chrome Root Store identifier.
     #[prost(int32, optional, tag = "12")]
     crs_root_id: Option<i32>,
@@ -85,27 +97,35 @@ struct ConstraintSetMessage {
     /// Latest accepted timestamp for at least one valid SCT.
     #[prost(int64, optional, tag = "1")]
     sct_not_after_sec: Option<i64>,
+
     /// Exclusive lower timestamp bound for every valid SCT.
     #[prost(int64, optional, tag = "2")]
     sct_all_after_sec: Option<i64>,
+
     /// Inclusive minimum Chrome version.
     #[prost(string, optional, tag = "3")]
     min_version: Option<String>,
+
     /// Exclusive maximum Chrome version.
     #[prost(string, optional, tag = "4")]
     max_version_exclusive: Option<String>,
+
     /// Permitted DNS subtrees for all leaf subject alternative names.
     #[prost(string, repeated, tag = "5")]
     permitted_dns_names: Vec<String>,
+
     /// Inclusive maximum Merkle Tree Certificate index.
     #[prost(uint64, optional, tag = "8")]
     index_not_after: Option<u64>,
+
     /// Exclusive minimum Merkle Tree Certificate index.
     #[prost(uint64, optional, tag = "9")]
     index_after: Option<u64>,
+
     /// Latest accepted leaf certificate validity start.
     #[prost(int64, optional, tag = "10")]
     validity_starts_not_after_sec: Option<i64>,
+
     /// Exclusive lower bound for the leaf certificate validity start.
     #[prost(int64, optional, tag = "11")]
     validity_starts_after_sec: Option<i64>,
@@ -120,12 +140,15 @@ struct MtcAnchorMessage {
     /// Binary log identifier.
     #[prost(bytes = "vec", optional, tag = "1")]
     log_id: Option<Vec<u8>>,
+
     /// Alternative sets of Chrome-specific constraints.
     #[prost(message, repeated, tag = "2")]
     constraints: Vec<ConstraintSetMessage>,
+
     /// Whether this entry is trusted for TLS.
     #[prost(bool, optional, tag = "3")]
     tls_trust_anchor: Option<bool>,
+
     /// Stable Chrome Root Store identifier.
     #[prost(int32, optional, tag = "4")]
     crs_root_id: Option<i32>,
