@@ -5,11 +5,13 @@
 use std::collections::BTreeSet;
 
 use chromium_roots::{
-    ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, TrustAnchorKind,
+    TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, TrustAnchorKind, encoded_trust_anchor_ids,
     trust_anchor_id_for_certificate, trust_anchor_ids,
 };
 
 static TRUST_ANCHOR_IDS: [&[u8]; trust_anchor_ids().len()] = trust_anchor_ids();
+static ENCODED_TRUST_ANCHOR_IDS: [u8; encoded_trust_anchor_ids().len()] =
+    encoded_trust_anchor_ids();
 
 fn lowercase_hex(bytes: &[u8]) -> String {
     const DIGITS: &[u8; 16] = b"0123456789abcdef";

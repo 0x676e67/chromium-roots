@@ -19,11 +19,14 @@ use btls::{
         store::{X509Store, X509StoreBuilder},
     },
 };
-use chromium_roots::{ENCODED_TRUST_ANCHOR_IDS, TLS_TRUST_ANCHORS, TrustAnchorKind};
+use chromium_roots::{TLS_TRUST_ANCHORS, TrustAnchorKind, encoded_trust_anchor_ids};
 use foreign_types_shared::ForeignTypeRef;
 
 const HOST: &str = "pingly.us.kg";
 const ADDRESS: &str = "pingly.us.kg:443";
+
+static ENCODED_TRUST_ANCHOR_IDS: [u8; encoded_trust_anchor_ids().len()] =
+    encoded_trust_anchor_ids();
 
 #[expect(
     unsafe_code,

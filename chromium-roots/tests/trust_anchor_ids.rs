@@ -1,13 +1,16 @@
 //! Validates Trust Anchor ID lookup and wire-format generation.
 
 use chromium_roots::{
-    ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS,
+    TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, encoded_trust_anchor_ids,
     trust_anchor_id_for_certificate, trust_anchor_ids,
 };
 
 static COMPILED_TRUST_ANCHOR_IDS: [&[u8]; trust_anchor_ids().len()] = trust_anchor_ids();
 static COMPILED_FIRST_LOOKUP: Option<&[u8]> =
     trust_anchor_id_for_certificate(TLS_TRUST_ANCHORS[0].der);
+
+static ENCODED_TRUST_ANCHOR_IDS: [u8; encoded_trust_anchor_ids().len()] =
+    encoded_trust_anchor_ids();
 
 fn decode_wire_ids(mut encoded: &[u8]) -> Vec<&[u8]> {
     let mut ids = Vec::new();
@@ -27,7 +30,7 @@ fn decode_wire_ids(mut encoded: &[u8]) -> Vec<&[u8]> {
 
 #[test]
 fn trust_anchor_id_metadata_matches_wire_encoding() {
-    let decoded = decode_wire_ids(ENCODED_TRUST_ANCHOR_IDS);
+    let decoded = decode_wire_ids(&ENCODED_TRUST_ANCHOR_IDS);
     let mapped = TLS_TRUST_ANCHORS
         .iter()
         .filter_map(|anchor| anchor.trust_anchor_id)
@@ -59,7 +62,7 @@ fn certificate_lookup_is_const_evaluable() {
 
 #[test]
 fn published_ids_only_match_exact_trusted_certificates() {
-    let encoded_ids = decode_wire_ids(ENCODED_TRUST_ANCHOR_IDS);
+    let encoded_ids = decode_wire_ids(&ENCODED_TRUST_ANCHOR_IDS);
     let mut matched_certificates = 0usize;
 
     for certificate in TLS_SERVER_ROOT_CERTS {

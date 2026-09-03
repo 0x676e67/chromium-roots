@@ -105,6 +105,17 @@ pub const fn trust_anchor_ids() -> [&'static [u8]; trust_anchor_id_count(TLS_TRU
     collect_trust_anchor_ids::<{ trust_anchor_id_count(TLS_TRUST_ANCHORS) }>(TLS_TRUST_ANCHORS)
 }
 
+/// Returns one-byte-length-prefixed Trust Anchor IDs in Chromium source order.
+///
+/// The array omits the TLS extension's outer two-byte vector length and can
+/// initialize caller-owned static data.
+#[must_use]
+pub const fn encoded_trust_anchor_ids() -> [u8; encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS)] {
+    encode_trust_anchor_ids::<{ encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS) }>(
+        TLS_TRUST_ANCHORS,
+    )
+}
+
 // Counts IDs for the const-generic collector below.
 const fn trust_anchor_id_count(anchors: &[TrustAnchor]) -> usize {
     let mut anchor_index = 0;
