@@ -1,9 +1,14 @@
 //! Validates Trust Anchor ID lookup and wire-format generation.
 
 use chromium_roots::{
-    ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS,
-    trust_anchor_id_for_certificate,
+    ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, trust_anchor_id_count,
+    trust_anchor_id_for_certificate, trust_anchor_ids,
 };
+
+static COMPILED_TRUST_ANCHOR_IDS: [&[u8]; trust_anchor_id_count(TLS_TRUST_ANCHORS)] =
+    trust_anchor_ids(TLS_TRUST_ANCHORS);
+static COMPILED_FIRST_LOOKUP: Option<&[u8]> =
+    trust_anchor_id_for_certificate(TLS_TRUST_ANCHORS[0].der);
 
 fn decode_wire_ids(mut encoded: &[u8]) -> Vec<&[u8]> {
     let mut ids = Vec::new();
@@ -32,6 +37,11 @@ fn trust_anchor_id_metadata_matches_wire_encoding() {
     assert!(!decoded.is_empty());
 
     assert_eq!(mapped, decoded, "every published ID must map exactly once");
+    assert_eq!(
+        mapped.as_slice(),
+        COMPILED_TRUST_ANCHOR_IDS.as_slice(),
+        "compile-time collection must preserve every published ID"
+    );
 
     let mut unique = mapped.clone();
     unique.sort_unstable();
@@ -41,6 +51,11 @@ fn trust_anchor_id_metadata_matches_wire_encoding() {
         mapped.len(),
         "Trust Anchor IDs must be unique"
     );
+}
+
+#[test]
+fn certificate_lookup_is_const_evaluable() {
+    assert_eq!(COMPILED_FIRST_LOOKUP, TLS_TRUST_ANCHORS[0].trust_anchor_id);
 }
 
 #[test]
