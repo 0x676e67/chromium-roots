@@ -88,5 +88,8 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Run the API overview example
+        run: cargo run --locked -p chromium-roots --example api_overview
+
       - name: Run the btls integration example
         run: cargo run --locked -p chromium-roots --example btls
