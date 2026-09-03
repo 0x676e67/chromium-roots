@@ -123,18 +123,18 @@ jobs:
 
           if [[ -z "$pr_url" ]]; then
             body_file="$RUNNER_TEMP/chromium-root-store-update.md"
-            cat > "$body_file" <<'EOF'
-This automated PR updates the checked-in Chrome Root Store snapshot from the
-signed Chromium PKI Metadata component.
-
-The update workflow verified the CRX3 signature and pinned component identity,
-regenerated the Rust source, ran formatting, workspace checks, Clippy, tests,
-the snapshot consistency check, package verification, and the btls integration
-example.
-
-Review chromium-crs/data/SOURCE.toml and the generated certificate changes
-before merging.
-EOF
+            {
+              echo "This automated PR updates the checked-in Chrome Root Store snapshot from the"
+              echo "signed Chromium PKI Metadata component."
+              echo
+              echo "The update workflow verified the CRX3 signature and pinned component identity,"
+              echo "regenerated the Rust source, ran formatting, workspace checks, Clippy, tests,"
+              echo "the snapshot consistency check, package verification, and the btls integration"
+              echo "example."
+              echo
+              echo "Review chromium-crs/data/SOURCE.toml and the generated certificate changes"
+              echo "before merging."
+            } > "$body_file"
             pr_url="$(
               gh pr create \
                 --base "$DEFAULT_BRANCH" \
