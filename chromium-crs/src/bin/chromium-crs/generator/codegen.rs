@@ -64,15 +64,6 @@ pub(super) fn generate_source(
             #(#anchor_items),*
         ];
 
-        #[doc = " Length-prefixed Trust Anchor IDs for native"]
-        #[doc = " requested-trust-anchor setter APIs."]
-        #[doc = " "]
-        #[doc = " IDs use deterministic Chromium source order. The TLS requested list is"]
-        #[doc = " semantically unordered, so this byte order is not a Chrome fingerprint."]
-        pub const ENCODED_TRUST_ANCHOR_IDS: &[u8] =
-            &encode_trust_anchor_ids::<
-                { encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS) }
-            >(TLS_TRUST_ANCHORS);
     };
     let syntax = syn::parse2(tokens).context("generated Root Store source is invalid Rust")?;
     let mut source =

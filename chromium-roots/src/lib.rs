@@ -12,6 +12,8 @@
 //! Chrome-equivalent verification must enforce [`RootConstraint`] and the
 //! anchor enforcement flags.
 
+include!("generated.rs");
+
 /// Identifies where an anchor appears in Chromium's Root Store data.
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -95,12 +97,27 @@ pub struct TrustAnchor {
     pub enforce_anchor_constraints: bool,
 }
 
-/// Returns the number of published Trust Anchor IDs in `anchors`.
+/// Returns all published Trust Anchor IDs in Chromium source order.
 ///
-/// This function is usable in const generic expressions when constructing a
-/// compile-time ID array with [`trust_anchor_ids`].
+/// The returned array can initialize static data without a separate count constant.
 #[must_use]
-pub const fn trust_anchor_id_count(anchors: &[TrustAnchor]) -> usize {
+pub const fn trust_anchor_ids() -> [&'static [u8]; trust_anchor_id_count(TLS_TRUST_ANCHORS)] {
+    collect_trust_anchor_ids::<{ trust_anchor_id_count(TLS_TRUST_ANCHORS) }>(TLS_TRUST_ANCHORS)
+}
+
+/// Returns one-byte-length-prefixed Trust Anchor IDs in Chromium source order.
+///
+/// The array omits the TLS extension's outer two-byte vector length and can
+/// initialize caller-owned static data.
+#[must_use]
+pub const fn encoded_trust_anchor_ids() -> [u8; encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS)] {
+    encode_trust_anchor_ids::<{ encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS) }>(
+        TLS_TRUST_ANCHORS,
+    )
+}
+
+// Counts IDs for the const-generic collector below.
+const fn trust_anchor_id_count(anchors: &[TrustAnchor]) -> usize {
     let mut anchor_index = 0;
     let mut count = 0;
 
@@ -114,17 +131,8 @@ pub const fn trust_anchor_id_count(anchors: &[TrustAnchor]) -> usize {
     count
 }
 
-/// Collects published Trust Anchor IDs in source order into a fixed-size array.
-///
-/// Use [`trust_anchor_id_count`] as `N` to derive the output length instead
-/// of hard-coding the current number of published IDs.
-///
-/// # Panics
-///
-/// Panics if `N` differs from the number of IDs in `anchors`. In a static or
-/// constant initializer, this is reported at compile time.
-#[must_use]
-pub const fn trust_anchor_ids<const N: usize>(anchors: &[TrustAnchor]) -> [&'static [u8]; N] {
+// Collects IDs into an array whose size is checked during constant evaluation.
+const fn collect_trust_anchor_ids<const N: usize>(anchors: &[TrustAnchor]) -> [&'static [u8]; N] {
     let mut ids: [&'static [u8]; N] = [&[]; N];
     let mut anchor_index = 0;
     let mut id_index = 0;
@@ -195,8 +203,6 @@ const fn encode_trust_anchor_ids<const N: usize>(anchors: &[TrustAnchor]) -> [u8
     assert!(offset == N, "encoded Trust Anchor ID length mismatch");
     encoded
 }
-
-include!("generated.rs");
 
 /// Returns the published Trust Anchor ID associated with an exact certificate DER match.
 ///

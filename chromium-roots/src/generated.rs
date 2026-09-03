@@ -2826,11 +2826,3 @@ pub const TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
         enforce_anchor_constraints: true,
     },
 ];
-/// Length-prefixed Trust Anchor IDs for native
-/// requested-trust-anchor setter APIs.
-///
-/// IDs use deterministic Chromium source order. The TLS requested list is
-/// semantically unordered, so this byte order is not a Chrome fingerprint.
-pub const ENCODED_TRUST_ANCHOR_IDS: &[u8] = &encode_trust_anchor_ids::<
-    { encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS) },
->(TLS_TRUST_ANCHORS);
