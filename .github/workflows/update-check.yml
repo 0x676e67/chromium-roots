@@ -1,4 +1,4 @@
-name: Check Chrome Root Store Update
+name: Update Chrome Root Store
 
 on:
   schedule:
@@ -7,22 +7,29 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 concurrency:
-  group: check-chrome-root-store-update
+  group: update-chrome-root-store
   cancel-in-progress: false
 
 jobs:
   update:
-    name: Check signed component update
+    name: Verify and propose signed component update
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       CMAKE_GENERATOR: Unix Makefiles
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      UPDATE_BRANCH: automation/chromium-root-store-update
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.repository.default_branch }}
 
       - name: Install Rust 1.98
         uses: dtolnay/rust-toolchain@1.98.0
@@ -71,28 +78,75 @@ jobs:
 
       - name: Run the btls integration example
         if: steps.changes.outputs.changed == 'true'
-        run: cargo run --locked -p chromium-roots --example btls --features btls-example
+        run: cargo run --locked -p chromium-roots --example btls
 
-      - name: Upload the reviewed update candidate
+      - name: Commit update and open pull request
         if: steps.changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: chrome-root-store-update
-          path: |
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          paths=(
             chromium-crs/data/crs.pb
             chromium-crs/data/SOURCE.toml
             chromium-roots/src/generated.rs
-          if-no-files-found: error
-          retention-days: 14
+          )
 
-      - name: Report the available update
-        if: steps.changes.outputs.changed == 'true'
-        shell: bash
-        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin \
+            "refs/heads/$UPDATE_BRANCH:refs/remotes/origin/$UPDATE_BRANCH" || true
+
+          if git rev-parse --verify --quiet \
+              "refs/remotes/origin/$UPDATE_BRANCH" >/dev/null &&
+            git diff --quiet "refs/remotes/origin/$UPDATE_BRANCH" -- "${paths[@]}"; then
+            echo "The update branch already contains the current generated files."
+          else
+            git switch --create "$UPDATE_BRANCH"
+            git add -- "${paths[@]}"
+            git diff --cached --check
+            git commit -m "chore: update Chrome Root Store"
+            gh auth setup-git
+            git push --force-with-lease --set-upstream origin "$UPDATE_BRANCH"
+          fi
+
+          pr_url="$(
+            gh pr list \
+              --base "$DEFAULT_BRANCH" \
+              --head "$UPDATE_BRANCH" \
+              --state open \
+              --json url \
+              --jq '.[0].url // empty'
+          )"
+
+          if [[ -z "$pr_url" ]]; then
+            body_file="$RUNNER_TEMP/chromium-root-store-update.md"
+            cat > "$body_file" <<'EOF'
+This automated PR updates the checked-in Chrome Root Store snapshot from the
+signed Chromium PKI Metadata component.
+
+The update workflow verified the CRX3 signature and pinned component identity,
+regenerated the Rust source, ran formatting, workspace checks, Clippy, tests,
+the snapshot consistency check, package verification, and the btls integration
+example.
+
+Review chromium-crs/data/SOURCE.toml and the generated certificate changes
+before merging.
+EOF
+            pr_url="$(
+              gh pr create \
+                --base "$DEFAULT_BRANCH" \
+                --head "$UPDATE_BRANCH" \
+                --title "chore: update Chrome Root Store" \
+                --body-file "$body_file"
+            )"
+          fi
+
           {
-            echo "## Chrome Root Store update available"
+            echo "## Chrome Root Store update proposed"
             echo
-            echo "The signed PKI Metadata component changed."
-            echo "Download the chrome-root-store-update artifact, review SOURCE.toml, and submit the update manually."
+            echo "Created or updated [$pr_url]($pr_url)."
+            echo "Review the signed source metadata and generated certificate diff before merging."
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "::warning::A validated Chrome Root Store update is available as a workflow artifact."
