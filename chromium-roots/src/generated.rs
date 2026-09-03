@@ -247,7 +247,8 @@ pub const TLS_SERVER_ROOT_CERTS: &[rustls_pki_types::CertificateDer<'static>] = 
     rustls_pki_types::CertificateDer::from_slice(CERTIFICATE_113),
     rustls_pki_types::CertificateDer::from_slice(CERTIFICATE_114),
 ];
-const TLS_TRUST_ANCHORS_DATA: &[TrustAnchor] = &[
+/// Chromium TLS trust anchors and their source metadata.
+pub const TLS_TRUST_ANCHORS: &[TrustAnchor] = &[
     TrustAnchor {
         der: CERTIFICATE_0,
         sha256: *b"U\x92`\x84\xEC\x96:d\xB9n*\xBE\x01\xCE\x0B\xA8jd\xFB\xFE\xBC\xC7\xAA\xB5\xAF\xC1U\xB3\x7F\xD7`f",
@@ -2825,13 +2826,11 @@ const TLS_TRUST_ANCHORS_DATA: &[TrustAnchor] = &[
         enforce_anchor_constraints: true,
     },
 ];
-/// Chromium TLS trust anchors and their source metadata.
-pub static TLS_TRUST_ANCHORS: &[TrustAnchor] = TLS_TRUST_ANCHORS_DATA;
 /// Length-prefixed Trust Anchor IDs for native
 /// requested-trust-anchor setter APIs.
 ///
 /// IDs use deterministic Chromium source order. The TLS requested list is
 /// semantically unordered, so this byte order is not a Chrome fingerprint.
 pub const ENCODED_TRUST_ANCHOR_IDS: &[u8] = &encode_trust_anchor_ids::<
-    { encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS_DATA) },
->(TLS_TRUST_ANCHORS_DATA);
+    { encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS) },
+>(TLS_TRUST_ANCHORS);

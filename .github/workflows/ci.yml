@@ -89,4 +89,4 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run the btls integration example
-        run: cargo run --locked -p chromium-roots --example btls --features btls-example
+        run: cargo run --locked -p chromium-roots --example btls

@@ -32,12 +32,6 @@ foreign-types-shared = "0.3"
 webpki = { workspace = true }
 x509-parser = { workspace = true }
 
-[features]
-btls-example = []
-
-[[example]]
-name = "btls"
-required-features = ["btls-example"]
 
 [lints]
 workspace = true
