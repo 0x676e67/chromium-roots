@@ -9,7 +9,7 @@ use chromium_roots::{
     trust_anchor_id_for_certificate, trust_anchor_ids,
 };
 
-static TRUST_ANCHOR_IDS: &[&[u8]] = trust_anchor_ids();
+static TRUST_ANCHOR_IDS: [&[u8]; trust_anchor_ids().len()] = trust_anchor_ids();
 
 fn lowercase_hex(bytes: &[u8]) -> String {
     const DIGITS: &[u8; 16] = b"0123456789abcdef";

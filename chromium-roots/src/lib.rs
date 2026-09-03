@@ -97,15 +97,12 @@ pub struct TrustAnchor {
     pub enforce_anchor_constraints: bool,
 }
 
-const TRUST_ANCHOR_IDS: &[&[u8]] =
-    &collect_trust_anchor_ids::<{ trust_anchor_id_count(TLS_TRUST_ANCHORS) }>(TLS_TRUST_ANCHORS);
-
 /// Returns all published Trust Anchor IDs in Chromium source order.
 ///
-/// The slice is constructed during constant evaluation and can initialize static data.
+/// The returned array can initialize static data without a separate count constant.
 #[must_use]
-pub const fn trust_anchor_ids() -> &'static [&'static [u8]] {
-    TRUST_ANCHOR_IDS
+pub const fn trust_anchor_ids() -> [&'static [u8]; trust_anchor_id_count(TLS_TRUST_ANCHORS)] {
+    collect_trust_anchor_ids::<{ trust_anchor_id_count(TLS_TRUST_ANCHORS) }>(TLS_TRUST_ANCHORS)
 }
 
 // Counts IDs for the const-generic collector below.

@@ -5,7 +5,7 @@ use chromium_roots::{
     trust_anchor_id_for_certificate, trust_anchor_ids,
 };
 
-static COMPILED_TRUST_ANCHOR_IDS: &[&[u8]] = trust_anchor_ids();
+static COMPILED_TRUST_ANCHOR_IDS: [&[u8]; trust_anchor_ids().len()] = trust_anchor_ids();
 static COMPILED_FIRST_LOOKUP: Option<&[u8]> =
     trust_anchor_id_for_certificate(TLS_TRUST_ANCHORS[0].der);
 
@@ -38,7 +38,7 @@ fn trust_anchor_id_metadata_matches_wire_encoding() {
     assert_eq!(mapped, decoded, "every published ID must map exactly once");
     assert_eq!(
         mapped.as_slice(),
-        COMPILED_TRUST_ANCHOR_IDS,
+        COMPILED_TRUST_ANCHOR_IDS.as_slice(),
         "compile-time collection must preserve every published ID"
     );
 
