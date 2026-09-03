@@ -1,0 +1,13 @@
+[workspace]
+# Keep the changelog for the published crate at the repository root.
+changelog_path = "./RELEASE.md"
+release_always = false
+publish = true
+git_release_enable = true
+git_tag_enable = true
+git_tag_name = "v{{ version }}"
+
+# chromium-crs is an internal generator and is never released.
+[[package]]
+name = "chromium-crs"
+release = false
