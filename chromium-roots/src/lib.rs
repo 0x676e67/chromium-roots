@@ -95,6 +95,53 @@ pub struct TrustAnchor {
     pub enforce_anchor_constraints: bool,
 }
 
+/// Returns the number of published Trust Anchor IDs in `anchors`.
+///
+/// This function is usable in const generic expressions when constructing a
+/// compile-time ID array with [`trust_anchor_ids`].
+#[must_use]
+pub const fn trust_anchor_id_count(anchors: &[TrustAnchor]) -> usize {
+    let mut anchor_index = 0;
+    let mut count = 0;
+
+    while anchor_index < anchors.len() {
+        if anchors[anchor_index].trust_anchor_id.is_some() {
+            count += 1;
+        }
+        anchor_index += 1;
+    }
+
+    count
+}
+
+/// Collects published Trust Anchor IDs in source order into a fixed-size array.
+///
+/// Use [`trust_anchor_id_count`] as `N` to derive the output length instead
+/// of hard-coding the current number of published IDs.
+///
+/// # Panics
+///
+/// Panics if `N` differs from the number of IDs in `anchors`. In a static or
+/// constant initializer, this is reported at compile time.
+#[must_use]
+pub const fn trust_anchor_ids<const N: usize>(anchors: &[TrustAnchor]) -> [&'static [u8]; N] {
+    let mut ids: [&'static [u8]; N] = [&[]; N];
+    let mut anchor_index = 0;
+    let mut id_index = 0;
+
+    while anchor_index < anchors.len() {
+        if let Some(id) = anchors[anchor_index].trust_anchor_id {
+            assert!(id_index < N, "Trust Anchor ID output array is too short");
+            ids[id_index] = id;
+            id_index += 1;
+        }
+        anchor_index += 1;
+    }
+
+    assert!(id_index == N, "Trust Anchor ID output array is too long");
+    ids
+}
+
 // These functions are evaluated only by generated constants. Keeping the
 // encoder here makes the metadata list the sole source of Trust Anchor ID bytes.
 const fn encoded_trust_anchor_ids_len(anchors: &[TrustAnchor]) -> usize {
@@ -152,10 +199,36 @@ const fn encode_trust_anchor_ids<const N: usize>(anchors: &[TrustAnchor]) -> [u8
 include!("generated.rs");
 
 /// Returns the published Trust Anchor ID associated with an exact certificate DER match.
+///
+/// This lookup can be evaluated in static and constant initializers.
 #[must_use]
-pub fn trust_anchor_id_for_certificate(certificate_der: &[u8]) -> Option<&'static [u8]> {
-    TLS_TRUST_ANCHORS
-        .iter()
-        .find(|anchor| anchor.der == certificate_der)
-        .and_then(|anchor| anchor.trust_anchor_id)
+pub const fn trust_anchor_id_for_certificate(certificate_der: &[u8]) -> Option<&'static [u8]> {
+    let mut anchor_index = 0;
+
+    while anchor_index < TLS_TRUST_ANCHORS.len() {
+        let anchor = &TLS_TRUST_ANCHORS[anchor_index];
+        if byte_slices_equal(anchor.der, certificate_der) {
+            return anchor.trust_anchor_id;
+        }
+        anchor_index += 1;
+    }
+
+    None
+}
+
+/// Compares byte slices without relying on non-const slice equality.
+const fn byte_slices_equal(left: &[u8], right: &[u8]) -> bool {
+    if left.len() != right.len() {
+        return false;
+    }
+
+    let mut index = 0;
+    while index < left.len() {
+        if left[index] != right[index] {
+            return false;
+        }
+        index += 1;
+    }
+
+    true
 }

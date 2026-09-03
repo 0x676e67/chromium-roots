@@ -6,8 +6,11 @@ use std::collections::BTreeSet;
 
 use chromium_roots::{
     ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, TrustAnchorKind,
-    trust_anchor_id_for_certificate,
+    trust_anchor_id_count, trust_anchor_id_for_certificate, trust_anchor_ids,
 };
+
+static TRUST_ANCHOR_IDS: [&[u8]; trust_anchor_id_count(TLS_TRUST_ANCHORS)] =
+    trust_anchor_ids(TLS_TRUST_ANCHORS);
 
 fn lowercase_hex(bytes: &[u8]) -> String {
     const DIGITS: &[u8; 16] = b"0123456789abcdef";
@@ -57,14 +60,11 @@ fn main() {
          {anchors_with_chromium_rules} with Chromium-specific rules"
     );
 
-    // Scanning every certificate with trust_anchor_id_for_certificate computes
-    // the complete set of IDs associated with this snapshot without relying on
-    // a separate count constant. It cannot enumerate IDs allocated outside
-    // Chromium because Trust Anchor IDs are not derived from certificate DER.
-    let ids_found_by_certificate = TLS_TRUST_ANCHORS
-        .iter()
-        .filter_map(|anchor| trust_anchor_id_for_certificate(anchor.der))
-        .collect::<BTreeSet<_>>();
+    // The ID count and array are evaluated at compile time, so this static
+    // automatically tracks the generated metadata without a hard-coded count.
+    // It cannot enumerate IDs allocated outside Chromium because Trust Anchor
+    // IDs are not derived from certificate DER.
+    let ids_found_by_certificate = TRUST_ANCHOR_IDS.iter().copied().collect::<BTreeSet<_>>();
     println!(
         "unique Trust Anchor IDs found across all snapshot certificates: {}",
         ids_found_by_certificate.len()
@@ -85,19 +85,10 @@ fn main() {
         }
     }
 
-    // Count IDs from the metadata when needed. This describes the current
-    // snapshot, not every Trust Anchor ID allocated worldwide.
-    println!(
-        "metadata ID entries: {}",
-        TLS_TRUST_ANCHORS
-            .iter()
-            .filter_map(|anchor| anchor.trust_anchor_id)
-            .count()
-    );
-    for id in TLS_TRUST_ANCHORS
-        .iter()
-        .filter_map(|anchor| anchor.trust_anchor_id)
-    {
+    // This describes the current snapshot, not every Trust Anchor ID
+    // allocated worldwide.
+    println!("metadata ID entries: {}", TRUST_ANCHOR_IDS.len());
+    for id in TRUST_ANCHOR_IDS {
         println!("  {}", lowercase_hex(id));
     }
 
