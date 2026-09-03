@@ -15,38 +15,36 @@ pub(crate) fn update(root: &Path) -> Result<()> {
     let snapshot = download_latest()?;
     let source = snapshot.source_metadata()?;
     let generated = generator::generate_component(&source, snapshot.crs())?;
-    let payload_changed = fs::read(root.join("chromium-crs/data/crs.pb"))
-        .ok()
-        .as_deref()
-        != Some(snapshot.crs());
+    let payload_path = root.join("chromium-crs/data/crs.pb");
+    let checked_in = fs::read(&payload_path).ok();
 
-    let payload_written = write_if_changed(&root.join("chromium-crs/data/crs.pb"), snapshot.crs())?;
-    let lock_written = write_source_lock(root, &snapshot, generated.root_store_version)?;
-    let source_written = generator::write_generated_source(root, &generated.source)?;
-
-    if payload_written || lock_written || source_written {
-        println!(
-            "updated Chrome Root Store from PKI Metadata component {}, version {} \
-             ({} anchors, {} IDs)",
-            snapshot.component_version(),
-            generated.root_store_version,
-            generated.anchor_count,
-            generated.id_count
-        );
-    } else {
+    // Keep provenance paired with the payload that is actually checked in.
+    if payload_is_current(checked_in.as_deref(), snapshot.crs()) {
         println!(
             "Chrome Root Store is unchanged in PKI Metadata component {}",
             snapshot.component_version()
         );
+        return Ok(());
     }
 
+    let payload_written = write_if_changed(&payload_path, snapshot.crs())?;
     ensure!(
-        payload_changed == payload_written,
+        payload_written,
         "snapshot change detection disagrees with file update"
+    );
+    write_source_lock(root, &snapshot, generated.root_store_version)?;
+    generator::write_generated_source(root, &generated.source)?;
+
+    println!(
+        "updated Chrome Root Store from PKI Metadata component {}, version {} \
+         ({} anchors, {} IDs)",
+        snapshot.component_version(),
+        generated.root_store_version,
+        generated.anchor_count,
+        generated.id_count
     );
     Ok(())
 }
-
 /// Checks generated-source freshness and compares against the latest component.
 pub(crate) fn check(root: &Path) -> Result<()> {
     let current = generator::generate(root)?;
@@ -79,6 +77,10 @@ pub(crate) fn check(root: &Path) -> Result<()> {
     )
 }
 
+/// Returns whether the candidate payload exactly matches the checked-in bytes.
+fn payload_is_current(checked_in: Option<&[u8]>, candidate: &[u8]) -> bool {
+    checked_in == Some(candidate)
+}
 /// Writes the human-reviewable provenance paired with the payload.
 fn write_source_lock(root: &Path, snapshot: &ComponentSnapshot, version: i64) -> Result<bool> {
     let contents = format!(
@@ -114,4 +116,15 @@ fn write_if_changed(path: &Path, contents: &[u8]) -> Result<bool> {
     }
     fs::write(path, contents).with_context(|| format!("failed to write {}", path.display()))?;
     Ok(true)
+}
+#[cfg(test)]
+mod tests {
+    use super::payload_is_current;
+
+    #[test]
+    fn payload_change_detection_is_byte_exact() {
+        assert!(payload_is_current(Some(&b"same"[..]), b"same"));
+        assert!(!payload_is_current(Some(&b"old"[..]), b"new"));
+        assert!(!payload_is_current(None, b"new"));
+    }
 }
