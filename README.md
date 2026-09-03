@@ -1,8 +1,8 @@
 # chromium-roots
 
 [![CI](https://github.com/0x676e67/chromium-roots/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/0x676e67/chromium-roots/actions/workflows/ci.yml)
-[![Crates.io](https://img.shields.io/crates/v/chromium-roots.svg)](https://crates.io/crates/chromium-roots)
 [![License](https://img.shields.io/github/license/0x676e67/chromium-roots)](LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/chromium-roots.svg)](https://crates.io/crates/chromium-roots)
 
 A compiled-in snapshot of the Chrome Root Store, generated from Chromium's PKI Metadata component.
 
