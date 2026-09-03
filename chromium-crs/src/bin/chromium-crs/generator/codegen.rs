@@ -85,8 +85,10 @@ pub(super) fn generate_source(
 struct GeneratedAnchorTokens {
     /// Private certificate byte constants.
     certificate_items: Vec<TokenStream>,
+
     /// Certificate identifiers reused by the public DER list.
     certificate_names: Vec<proc_macro2::Ident>,
+
     /// Complete Chrome trust-anchor metadata entries.
     anchor_items: Vec<TokenStream>,
 }
