@@ -178,6 +178,8 @@ const fn encoded_trust_anchor_ids_len(anchors: &[TrustAnchor]) -> usize {
     length
 }
 
+// Encodes each published ID with its one-byte length prefix.
+// `N` must equal `encoded_trust_anchor_ids_len(anchors)`.
 const fn encode_trust_anchor_ids<const N: usize>(anchors: &[TrustAnchor]) -> [u8; N] {
     let mut encoded = [0; N];
     let mut anchor_index = 0;
