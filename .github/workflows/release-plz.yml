@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      # The published library excludes the workspace lockfile.
+      - Cargo.lock
 
 jobs:
   release-plz-release:
