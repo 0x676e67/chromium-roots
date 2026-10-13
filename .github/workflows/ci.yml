@@ -2,16 +2,15 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   workflows:
@@ -21,17 +20,27 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Lint workflows
         uses: docker://rhysd/actionlint:1.7.7
 
+      - name: Test release commit guard
+        run: python3 -B -m unittest discover -s .github/scripts -p 'test_*.py'
+
   msrv:
+    needs: workflows
     name: Rust 1.98
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Install Rust 1.98
         uses: dtolnay/rust-toolchain@1.98.0
@@ -40,6 +49,7 @@ jobs:
         run: cargo check --workspace --all-targets --locked
 
   rust:
+    needs: msrv
     name: Rust stable
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -48,14 +58,22 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Install nightly rustfmt
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy, rustfmt
+          components: clippy
 
       - name: Check formatting
-        run: cargo fmt --all --check
+        run: cargo +nightly fmt --all --check
 
       - name: Check workspace
         run: cargo check --workspace --all-targets --locked
@@ -69,13 +87,14 @@ jobs:
       - name: Check documentation
         run: cargo doc --workspace --no-deps --locked
 
-      - name: Check the signed component snapshot
+      - name: Check the locked snapshot and generated source
         run: cargo run --locked -p chromium-crs -- check
 
       - name: Check the publishable package
         run: cargo package --locked -p chromium-roots
 
   btls-example:
+    needs: rust
     name: btls integration example
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -84,6 +103,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable

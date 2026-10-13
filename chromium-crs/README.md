@@ -23,6 +23,18 @@ Run the maintenance commands from the workspace root:
     cargo run -p chromium-crs -- update
     cargo run -p chromium-crs -- generate
     cargo run -p chromium-crs -- check
+    cargo run -p chromium-crs -- check-latest
+
+`check` works offline. It validates the locked payload digest, source metadata,
+protobuf schema, all certificates and IDs, and byte-for-byte generated source
+consistency. The lock records authentication performed when the snapshot was
+downloaded; the original CRX3 archive is not stored or reverified by this command.
+
+`check-latest` also downloads and authenticates the current component and reports
+upstream changes without modifying files. `update` performs the same CRX3 signature
+and pinned-key verification before writing a changed snapshot. The scheduled
+update workflow uses `update`, then checks the resulting local snapshot without
+downloading a second component that may have changed in the meantime.
 
 Unknown protobuf fields, reserved fields, and unexpected wire types are rejected
 so Chromium schema changes require an explicit source review.

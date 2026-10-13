@@ -7,8 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: update-chrome-root-store
@@ -16,6 +15,14 @@ concurrency:
 
 jobs:
   update:
+    if: >-
+      ${{
+        github.repository == '0x676e67/chromium-roots' &&
+        github.ref == 'refs/heads/main'
+      }}
+    permissions:
+      contents: write
+      pull-requests: write
     name: Verify and propose signed component update
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -29,7 +36,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.sha }}
+
+      - name: Install nightly rustfmt
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
 
       - name: Install Rust 1.98
         uses: dtolnay/rust-toolchain@1.98.0
@@ -54,7 +66,7 @@ jobs:
 
       - name: Check formatting
         if: steps.changes.outputs.changed == 'true'
-        run: cargo fmt --all --check
+        run: cargo +nightly fmt --all --check
 
       - name: Check workspace
         if: steps.changes.outputs.changed == 'true'
@@ -68,7 +80,7 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         run: cargo test --workspace --locked
 
-      - name: Check the signed component snapshot
+      - name: Check the locked snapshot and generated source
         if: steps.changes.outputs.changed == 'true'
         run: cargo run --locked -p chromium-crs -- check
 
@@ -122,25 +134,12 @@ jobs:
           )"
 
           if [[ -z "$pr_url" ]]; then
-            body_file="$RUNNER_TEMP/chromium-root-store-update.md"
-            {
-              echo "This automated PR updates the checked-in Chrome Root Store snapshot from the"
-              echo "signed Chromium PKI Metadata component."
-              echo
-              echo "The update workflow verified the CRX3 signature and pinned component identity,"
-              echo "regenerated the Rust source, ran formatting, workspace checks, Clippy, tests,"
-              echo "the snapshot consistency check, package verification, and the btls integration"
-              echo "example."
-              echo
-              echo "Review chromium-crs/data/SOURCE.toml and the generated certificate changes"
-              echo "before merging."
-            } > "$body_file"
             pr_url="$(
               gh pr create \
                 --base "$DEFAULT_BRANCH" \
                 --head "$UPDATE_BRANCH" \
                 --title "chore: update Chrome Root Store" \
-                --body-file "$body_file"
+                --body ""
             )"
           fi
 

@@ -45,8 +45,19 @@ pub(crate) fn update(root: &Path) -> Result<()> {
     );
     Ok(())
 }
-/// Checks generated-source freshness and compares against the latest component.
+/// Checks the locked payload, metadata, and generated source without network access.
 pub(crate) fn check(root: &Path) -> Result<()> {
+    let current = generator::generate(root)?;
+    generator::ensure_generated_source_current(root, &current.source)?;
+    println!(
+        "checked locked Chrome Root Store version {} ({} anchors, {} IDs)",
+        current.root_store_version, current.anchor_count, current.id_count
+    );
+    Ok(())
+}
+
+/// Checks local consistency and compares against the latest authenticated component.
+pub(crate) fn check_latest(root: &Path) -> Result<()> {
     let current = generator::generate(root)?;
     generator::ensure_generated_source_current(root, &current.source)?;
 
@@ -119,7 +130,65 @@ fn write_if_changed(path: &Path, contents: &[u8]) -> Result<bool> {
 }
 #[cfg(test)]
 mod tests {
-    use super::payload_is_current;
+    use std::{path::PathBuf, time::SystemTime};
+
+    use super::*;
+
+    struct SnapshotFixture(PathBuf);
+
+    impl Drop for SnapshotFixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn local_check_rejects_changed_payload_provenance_and_generated_source() {
+        let nonce = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let fixture = SnapshotFixture(
+            std::env::temp_dir().join(format!("chromium-crs-check-{}-{nonce}", std::process::id())),
+        );
+        let workspace = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let paths = [
+            "chromium-crs/data/crs.pb",
+            "chromium-crs/data/SOURCE.toml",
+            "chromium-roots/src/generated.rs",
+        ];
+        for path in paths {
+            write_if_changed(
+                &fixture.0.join(path),
+                &fs::read(workspace.join(path)).unwrap(),
+            )
+            .unwrap();
+        }
+        check(&fixture.0).expect("locked snapshot must pass without downloading an update");
+
+        for (path, diagnostic) in paths.into_iter().zip([
+            "SHA-256 does not match",
+            "pinned component endpoint",
+            "generated.rs is stale",
+        ]) {
+            let destination = fixture.0.join(path);
+            let original = fs::read(&destination).unwrap();
+            let changed = if path.ends_with("SOURCE.toml") {
+                String::from_utf8(original.clone())
+                    .unwrap()
+                    .replace(COMPONENT_UPDATE_URL, "https://example.com/component")
+                    .into_bytes()
+            } else {
+                let mut bytes = original.clone();
+                bytes.push(b'\n');
+                bytes
+            };
+            fs::write(&destination, changed).unwrap();
+            let error = check(&fixture.0).expect_err("modified snapshot must be rejected");
+            assert!(error.to_string().contains(diagnostic), "{error:#}");
+            fs::write(destination, original).unwrap();
+        }
+    }
 
     #[test]
     fn payload_change_detection_is_byte_exact() {
