@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2](https://github.com/0x676e67/chromium-roots/compare/v0.1.1...v0.1.2) - 2026-10-09
+
+### Other
+
+- update Chrome Root Store ([#25](https://github.com/0x676e67/chromium-roots/pull/25))
+
 ## [0.1.1](https://github.com/0x676e67/chromium-roots/compare/v0.1.0...v0.1.1) - 2026-09-03
 
 ### Added
