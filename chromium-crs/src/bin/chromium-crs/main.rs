@@ -15,14 +15,17 @@ fn main() -> Result<()> {
     let mut args = env::args().skip(1);
     let command = args
         .next()
-        .context("expected one of: update, generate, check")?;
+        .context("expected one of: update, generate, check, check-latest")?;
     ensure_no_extra_args(args)?;
 
     match command.as_str() {
         "update" => component::update(&root),
         "generate" => generate(&root),
         "check" => component::check(&root),
-        _ => bail!("unknown command {command:?}; expected update, generate, or check"),
+        "check-latest" => component::check_latest(&root),
+        _ => {
+            bail!("unknown command {command:?}; expected update, generate, check, or check-latest")
+        }
     }
 }
 

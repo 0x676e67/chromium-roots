@@ -4,15 +4,60 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      # The published library excludes the workspace lockfile.
-      - Cargo.lock
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-plz-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  changes:
+    needs: verify
+    name: Check release changes
+    if: >-
+      ${{
+        github.repository == '0x676e67/chromium-roots' &&
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/main'
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      release: ${{ steps.changes.outputs.release }}
+    steps:
+      - name: Checkout verified commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Skip lockfile-only pushes
+        id: changes
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A missing predecessor cannot prove that only Cargo.lock changed.
+          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null &&
+            git diff --quiet "$BEFORE" "$AFTER" -- . ':!Cargo.lock'; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
   release-plz-release:
     name: Release-plz release
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == '0x676e67' }}
+    needs: changes
+    if: needs.changes.outputs.release == 'true'
     outputs:
       releases_created: ${{ steps.release-plz.outputs.releases_created }}
     permissions:
@@ -23,16 +68,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: true
           token: ${{ secrets.RELEASE_PLZ_TOKEN }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Reject release-plz checkout to an unverified ancestor
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+        run: python3 .github/scripts/check-release-commit.py
       - name: Run release-plz
         id: release-plz
         uses: release-plz/action@v0.5
         with:
           command: release
+          version: 0.3.171
           config: .release-plz.toml
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
@@ -43,29 +94,33 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       ${{
-        github.repository_owner == '0x676e67' &&
         needs.release-plz-release.result == 'success' &&
         needs.release-plz-release.outputs.releases_created == 'false'
       }}
     permissions:
       pull-requests: write
       contents: write
-    concurrency:
-      group: release-plz-${{ github.ref }}
-      cancel-in-progress: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: true
           token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      - name: Attach the verified commit to a local branch
+        env:
+          VERIFIED_SHA: ${{ github.sha }}
+        run: |
+          git switch --force-create main "$VERIFIED_SHA"
+          test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
           command: release-pr
+          version: 0.3.171
           config: .release-plz.toml
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
