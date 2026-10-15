@@ -255,20 +255,17 @@ fn extract_payload(archive: &[u8]) -> Result<(Value, Vec<u8>)> {
         let file = archive
             .by_index(index)
             .with_context(|| format!("failed to inspect ZIP entry {index}"))?;
+        let name = file
+            .name()
+            .with_context(|| format!("ZIP entry {index} has an undecodable name"))?;
         ensure!(
             file.enclosed_name().is_some(),
-            "ZIP entry has an unsafe path {:?}",
-            file.name()
+            "ZIP entry has an unsafe path {name:?}"
         );
+        ensure!(!file.encrypted(), "ZIP entry {name:?} is encrypted");
         ensure!(
-            !file.encrypted(),
-            "ZIP entry {:?} is encrypted",
-            file.name()
-        );
-        ensure!(
-            names.insert(file.name().to_owned()),
-            "duplicate ZIP entry {:?}",
-            file.name()
+            names.insert(name.to_string()),
+            "duplicate ZIP entry {name:?}"
         );
         total_size = total_size
             .checked_add(file.size())
