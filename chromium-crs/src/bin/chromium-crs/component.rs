@@ -26,8 +26,8 @@ pub(crate) fn update(root: &Path) -> Result<()> {
         );
         return Ok(());
     }
-    if let Some(current) = generator::generate_checked_in(root)? {
-        ensure_not_older(&current, &candidate)?;
+    if let Some((locked, locked_version)) = generator::read_source_lock(root)? {
+        ensure_not_older(locked.component_version(), locked_version, &candidate)?;
     }
 
     let payload_written = write_if_changed(&payload_path, snapshot.crs())?;
@@ -70,7 +70,11 @@ pub(crate) fn check_latest(root: &Path) -> Result<()> {
     let checked_in = fs::read(root.join("chromium-crs/data/crs.pb"))
         .context("failed to read checked-in chromium-crs/data/crs.pb")?;
 
-    ensure_not_older(&current, &candidate)?;
+    ensure_not_older(
+        &current.component_version,
+        current.root_store_version,
+        &candidate,
+    )?;
     if checked_in == snapshot.crs() {
         println!(
             "Chrome Root Store is current at PKI Metadata component {}",
@@ -87,19 +91,23 @@ pub(crate) fn check_latest(root: &Path) -> Result<()> {
 }
 
 /// Rejects a candidate older than the checked-in snapshot, such as a replayed component.
-fn ensure_not_older(current: &GeneratedLibrary, candidate: &GeneratedLibrary) -> Result<()> {
+fn ensure_not_older(
+    current_component_version: &str,
+    current_root_store_version: i64,
+    candidate: &GeneratedLibrary,
+) -> Result<()> {
     ensure!(
-        candidate.root_store_version >= current.root_store_version,
+        candidate.root_store_version >= current_root_store_version,
         "component Root Store version {} is older than checked-in version {}",
         candidate.root_store_version,
-        current.root_store_version
+        current_root_store_version
     );
     ensure!(
         version_components(&candidate.component_version)?
-            >= version_components(&current.component_version)?,
+            >= version_components(current_component_version)?,
         "component version {} is older than checked-in component version {}",
         candidate.component_version,
-        current.component_version
+        current_component_version
     );
     Ok(())
 }
@@ -218,11 +226,7 @@ mod tests {
         }
 
         fs::remove_file(fixture.0.join("chromium-crs/data/SOURCE.toml")).unwrap();
-        assert!(
-            generator::generate_checked_in(&fixture.0)
-                .unwrap()
-                .is_none()
-        );
+        assert!(generator::read_source_lock(&fixture.0).unwrap().is_none());
         let error = check(&fixture.0).expect_err("a missing lock must be rejected");
         assert!(
             error.to_string().contains("SOURCE.toml is missing"),
@@ -232,25 +236,24 @@ mod tests {
 
     #[test]
     fn candidates_older_than_the_checked_in_snapshot_are_rejected() {
-        let library = |component_version: &str, root_store_version| GeneratedLibrary {
+        let candidate = |component_version: &str, root_store_version| GeneratedLibrary {
             source: String::new(),
             component_version: component_version.to_owned(),
             root_store_version,
             anchor_count: 0,
             id_count: 0,
         };
-        let current = library("1798", 40);
 
-        assert!(ensure_not_older(&current, &library("1798", 40)).is_ok());
-        assert!(ensure_not_older(&current, &library("1798.1", 40)).is_ok());
-        assert!(ensure_not_older(&current, &library("1800", 41)).is_ok());
+        assert!(ensure_not_older("1798", 40, &candidate("1798", 40)).is_ok());
+        assert!(ensure_not_older("1798", 40, &candidate("1798.1", 40)).is_ok());
+        assert!(ensure_not_older("1798", 40, &candidate("1800", 41)).is_ok());
         // Components compare numerically, not as text.
-        assert!(ensure_not_older(&current, &library("10000", 40)).is_ok());
-        assert!(ensure_not_older(&library("2.10", 40), &library("2.9", 40)).is_err());
+        assert!(ensure_not_older("1798", 40, &candidate("10000", 40)).is_ok());
+        assert!(ensure_not_older("2.10", 40, &candidate("2.9", 40)).is_err());
 
-        let error = ensure_not_older(&current, &library("1800", 39)).unwrap_err();
+        let error = ensure_not_older("1798", 40, &candidate("1800", 39)).unwrap_err();
         assert!(error.to_string().contains("Root Store version 39 is older"));
-        let error = ensure_not_older(&current, &library("1790", 40)).unwrap_err();
+        let error = ensure_not_older("1798", 40, &candidate("1790", 40)).unwrap_err();
         assert!(
             error
                 .to_string()

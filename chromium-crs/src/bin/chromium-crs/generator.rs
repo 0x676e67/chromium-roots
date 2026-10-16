@@ -43,16 +43,9 @@ pub(crate) struct GeneratedLibrary {
 
 /// Generates from the checked-in payload and verifies its provenance lock.
 pub(crate) fn generate(root: &Path) -> Result<GeneratedLibrary> {
-    generate_checked_in(root)?.context(
+    let (source, expected_version) = read_source_lock(root)?.context(
         "chromium-crs/data/SOURCE.toml is missing; run cargo run -p chromium-crs -- update",
-    )
-}
-
-/// Like [`generate`], but returns `None` before the first snapshot is locked.
-pub(crate) fn generate_checked_in(root: &Path) -> Result<Option<GeneratedLibrary>> {
-    let Some((source, expected_version)) = read_source_lock(root)? else {
-        return Ok(None);
-    };
+    )?;
     let crs = read_file(&root.join("chromium-crs/data/crs.pb"))?;
     let generated = generate_component(&source, &crs)?;
     ensure!(
@@ -60,7 +53,7 @@ pub(crate) fn generate_checked_in(root: &Path) -> Result<Option<GeneratedLibrary
         "SOURCE.toml version {expected_version} does not match component version {}",
         generated.root_store_version
     );
-    Ok(Some(generated))
+    Ok(generated)
 }
 
 /// Validates and generates a downloaded candidate before it is written.
@@ -175,7 +168,7 @@ fn read_file(path: &Path) -> Result<Vec<u8>> {
 }
 
 /// Reads the provenance lock, or returns `None` before the first snapshot is written.
-fn read_source_lock(root: &Path) -> Result<Option<(SourceMetadata, i64)>> {
+pub(crate) fn read_source_lock(root: &Path) -> Result<Option<(SourceMetadata, i64)>> {
     let path = root.join("chromium-crs/data/SOURCE.toml");
     let contents = match fs::read_to_string(&path) {
         Ok(contents) => contents,
