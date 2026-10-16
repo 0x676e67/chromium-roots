@@ -8,13 +8,13 @@ use std::{fs, path::Path};
 use anyhow::{Context, Result, bail, ensure};
 use chromium_crs::{COMPONENT_UPDATE_URL, ComponentSnapshot, download_latest};
 
-use crate::generator;
+use crate::generator::{self, GeneratedLibrary};
 
 /// Downloads and writes a changed, fully validated snapshot.
 pub(crate) fn update(root: &Path) -> Result<()> {
     let snapshot = download_latest()?;
     let source = snapshot.source_metadata()?;
-    let generated = generator::generate_component(&source, snapshot.crs())?;
+    let candidate = generator::generate_component(&source, snapshot.crs())?;
     let payload_path = root.join("chromium-crs/data/crs.pb");
     let checked_in = fs::read(&payload_path).ok();
 
@@ -26,22 +26,25 @@ pub(crate) fn update(root: &Path) -> Result<()> {
         );
         return Ok(());
     }
+    if let Some(current) = generator::generate_checked_in(root)? {
+        ensure_not_older(&current, &candidate)?;
+    }
 
     let payload_written = write_if_changed(&payload_path, snapshot.crs())?;
     ensure!(
         payload_written,
         "snapshot change detection disagrees with file update"
     );
-    write_source_lock(root, &snapshot, generated.root_store_version)?;
-    generator::write_generated_source(root, &generated.source)?;
+    write_source_lock(root, &snapshot, candidate.root_store_version)?;
+    generator::write_generated_source(root, &candidate.source)?;
 
     println!(
         "updated Chrome Root Store from PKI Metadata component {}, version {} \
          ({} anchors, {} IDs)",
         snapshot.component_version(),
-        generated.root_store_version,
-        generated.anchor_count,
-        generated.id_count
+        candidate.root_store_version,
+        candidate.anchor_count,
+        candidate.id_count
     );
     Ok(())
 }
@@ -67,12 +70,7 @@ pub(crate) fn check_latest(root: &Path) -> Result<()> {
     let checked_in = fs::read(root.join("chromium-crs/data/crs.pb"))
         .context("failed to read checked-in chromium-crs/data/crs.pb")?;
 
-    ensure!(
-        candidate.root_store_version >= current.root_store_version,
-        "component Root Store version {} is older than checked-in version {}",
-        candidate.root_store_version,
-        current.root_store_version
-    );
+    ensure_not_older(&current, &candidate)?;
     if checked_in == snapshot.crs() {
         println!(
             "Chrome Root Store is current at PKI Metadata component {}",
@@ -86,6 +84,36 @@ pub(crate) fn check_latest(root: &Path) -> Result<()> {
          run cargo run -p chromium-crs -- update",
         snapshot.component_version()
     )
+}
+
+/// Rejects a candidate older than the checked-in snapshot, such as a replayed component.
+fn ensure_not_older(current: &GeneratedLibrary, candidate: &GeneratedLibrary) -> Result<()> {
+    ensure!(
+        candidate.root_store_version >= current.root_store_version,
+        "component Root Store version {} is older than checked-in version {}",
+        candidate.root_store_version,
+        current.root_store_version
+    );
+    ensure!(
+        version_components(&candidate.component_version)?
+            >= version_components(&current.component_version)?,
+        "component version {} is older than checked-in component version {}",
+        candidate.component_version,
+        current.component_version
+    );
+    Ok(())
+}
+
+/// Splits a dotted version into numerically comparable components.
+fn version_components(version: &str) -> Result<Vec<u64>> {
+    version
+        .split('.')
+        .map(|component| {
+            component
+                .parse()
+                .with_context(|| format!("invalid component version {version:?}"))
+        })
+        .collect()
 }
 
 /// Returns whether the candidate payload exactly matches the checked-in bytes.
@@ -188,6 +216,46 @@ mod tests {
             assert!(error.to_string().contains(diagnostic), "{error:#}");
             fs::write(destination, original).unwrap();
         }
+
+        fs::remove_file(fixture.0.join("chromium-crs/data/SOURCE.toml")).unwrap();
+        assert!(
+            generator::generate_checked_in(&fixture.0)
+                .unwrap()
+                .is_none()
+        );
+        let error = check(&fixture.0).expect_err("a missing lock must be rejected");
+        assert!(
+            error.to_string().contains("SOURCE.toml is missing"),
+            "{error:#}"
+        );
+    }
+
+    #[test]
+    fn candidates_older_than_the_checked_in_snapshot_are_rejected() {
+        let library = |component_version: &str, root_store_version| GeneratedLibrary {
+            source: String::new(),
+            component_version: component_version.to_owned(),
+            root_store_version,
+            anchor_count: 0,
+            id_count: 0,
+        };
+        let current = library("1798", 40);
+
+        assert!(ensure_not_older(&current, &library("1798", 40)).is_ok());
+        assert!(ensure_not_older(&current, &library("1798.1", 40)).is_ok());
+        assert!(ensure_not_older(&current, &library("1800", 41)).is_ok());
+        // Components compare numerically, not as text.
+        assert!(ensure_not_older(&current, &library("10000", 40)).is_ok());
+        assert!(ensure_not_older(&library("2.10", 40), &library("2.9", 40)).is_err());
+
+        let error = ensure_not_older(&current, &library("1800", 39)).unwrap_err();
+        assert!(error.to_string().contains("Root Store version 39 is older"));
+        let error = ensure_not_older(&current, &library("1790", 40)).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("component version 1790 is older")
+        );
     }
 
     #[test]

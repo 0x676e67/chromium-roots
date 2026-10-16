@@ -3,7 +3,7 @@
 #[path = "generator/codegen.rs"]
 mod codegen;
 
-use std::{collections::BTreeSet, fs, path::Path};
+use std::{collections::BTreeSet, fs, io, path::Path};
 
 use anyhow::{Context, Result, bail, ensure};
 use chromium_crs::{
@@ -28,6 +28,9 @@ pub(crate) struct GeneratedLibrary {
     /// Formatted Rust source for the public data crate.
     pub(crate) source: String,
 
+    /// Signed PKI Metadata component version.
+    pub(crate) component_version: String,
+
     /// Signed Chrome Root Store major version.
     pub(crate) root_store_version: i64,
 
@@ -40,7 +43,16 @@ pub(crate) struct GeneratedLibrary {
 
 /// Generates from the checked-in payload and verifies its provenance lock.
 pub(crate) fn generate(root: &Path) -> Result<GeneratedLibrary> {
-    let (source, expected_version) = read_source_lock(root)?;
+    generate_checked_in(root)?.context(
+        "chromium-crs/data/SOURCE.toml is missing; run cargo run -p chromium-crs -- update",
+    )
+}
+
+/// Like [`generate`], but returns `None` before the first snapshot is locked.
+pub(crate) fn generate_checked_in(root: &Path) -> Result<Option<GeneratedLibrary>> {
+    let Some((source, expected_version)) = read_source_lock(root)? else {
+        return Ok(None);
+    };
     let crs = read_file(&root.join("chromium-crs/data/crs.pb"))?;
     let generated = generate_component(&source, &crs)?;
     ensure!(
@@ -48,7 +60,7 @@ pub(crate) fn generate(root: &Path) -> Result<GeneratedLibrary> {
         "SOURCE.toml version {expected_version} does not match component version {}",
         generated.root_store_version
     );
-    Ok(generated)
+    Ok(Some(generated))
 }
 
 /// Validates and generates a downloaded candidate before it is written.
@@ -73,6 +85,7 @@ pub(crate) fn generate_component(source: &SourceMetadata, crs: &[u8]) -> Result<
 
     Ok(GeneratedLibrary {
         source: source_code,
+        component_version: source.component_version().to_owned(),
         root_store_version: parsed.version,
         anchor_count: validated.len(),
         id_count: trust_anchor_ids.len(),
@@ -161,13 +174,17 @@ fn read_file(path: &Path) -> Result<Vec<u8>> {
     fs::read(path).with_context(|| format!("failed to read {}", path.display()))
 }
 
-/// Parses the deliberately small, generated provenance lock format.
-fn read_source_lock(root: &Path) -> Result<(SourceMetadata, i64)> {
+/// Reads the provenance lock, or returns `None` before the first snapshot is written.
+fn read_source_lock(root: &Path) -> Result<Option<(SourceMetadata, i64)>> {
     let path = root.join("chromium-crs/data/SOURCE.toml");
-    let contents =
-        fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
-
-    parse_source_lock(&contents)
+    let contents = match fs::read_to_string(&path) {
+        Ok(contents) => contents,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => {
+            return Err(error).with_context(|| format!("failed to read {}", path.display()));
+        }
+    };
+    parse_source_lock(&contents).map(Some)
 }
 
 /// Parses and validates the deliberately small provenance lock format.
@@ -303,6 +320,7 @@ source = "https://clients2.google.com/service/update2/crx"
 
         assert!(generated.root_store_version > 0);
         assert!(generated.anchor_count > 0);
+        assert_ne!(generated.component_version, "");
         assert_ne!(generated.source, "");
     }
 
