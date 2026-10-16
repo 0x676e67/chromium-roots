@@ -97,9 +97,19 @@ pub struct TrustAnchor {
     pub enforce_anchor_constraints: bool,
 }
 
+/// All published Trust Anchor IDs in Chromium source order.
+pub const TRUST_ANCHOR_IDS: &[&[u8]] = &trust_anchor_ids();
+
+/// One-byte-length-prefixed Trust Anchor IDs in Chromium source order.
+///
+/// This is the list expected by the `BoringSSL` requested-trust-anchor setter;
+/// it omits the TLS extension's outer two-byte vector length.
+pub const ENCODED_TRUST_ANCHOR_IDS: &[u8] = &encoded_trust_anchor_ids();
+
 /// Returns all published Trust Anchor IDs in Chromium source order.
 ///
-/// The returned array can initialize static data without a separate count constant.
+/// The returned array can initialize caller-owned static data without a
+/// separate count constant; [`TRUST_ANCHOR_IDS`] holds the same list as a slice.
 #[must_use]
 pub const fn trust_anchor_ids() -> [&'static [u8]; trust_anchor_id_count(TLS_TRUST_ANCHORS)] {
     collect_trust_anchor_ids::<{ trust_anchor_id_count(TLS_TRUST_ANCHORS) }>(TLS_TRUST_ANCHORS)
@@ -108,7 +118,8 @@ pub const fn trust_anchor_ids() -> [&'static [u8]; trust_anchor_id_count(TLS_TRU
 /// Returns one-byte-length-prefixed Trust Anchor IDs in Chromium source order.
 ///
 /// The array omits the TLS extension's outer two-byte vector length and can
-/// initialize caller-owned static data.
+/// initialize caller-owned static data; [`ENCODED_TRUST_ANCHOR_IDS`] holds the
+/// same bytes as a slice.
 #[must_use]
 pub const fn encoded_trust_anchor_ids() -> [u8; encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS)] {
     encode_trust_anchor_ids::<{ encoded_trust_anchor_ids_len(TLS_TRUST_ANCHORS) }>(

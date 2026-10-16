@@ -5,13 +5,9 @@
 use std::collections::BTreeSet;
 
 use chromium_roots::{
-    TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, TrustAnchorKind, encoded_trust_anchor_ids,
-    trust_anchor_id_for_certificate, trust_anchor_ids,
+    ENCODED_TRUST_ANCHOR_IDS, TLS_SERVER_ROOT_CERTS, TLS_TRUST_ANCHORS, TRUST_ANCHOR_IDS,
+    TrustAnchorKind, trust_anchor_id_for_certificate,
 };
-
-static TRUST_ANCHOR_IDS: [&[u8]; trust_anchor_ids().len()] = trust_anchor_ids();
-static ENCODED_TRUST_ANCHOR_IDS: [u8; encoded_trust_anchor_ids().len()] =
-    encoded_trust_anchor_ids();
 
 fn lowercase_hex(bytes: &[u8]) -> String {
     const DIGITS: &[u8; 16] = b"0123456789abcdef";
@@ -61,10 +57,10 @@ fn main() {
          {anchors_with_chromium_rules} with Chromium-specific rules"
     );
 
-    // The ID count and array are evaluated at compile time, so this static
-    // automatically tracks the generated metadata without a hard-coded count.
-    // It cannot enumerate IDs allocated outside Chromium because Trust Anchor
-    // IDs are not derived from certificate DER.
+    // The ID list is derived from the generated metadata at compile time, so
+    // it tracks every snapshot without a hard-coded count. It cannot enumerate
+    // IDs allocated outside Chromium because Trust Anchor IDs are not derived
+    // from certificate DER.
     let ids_found_by_certificate = TRUST_ANCHOR_IDS.iter().copied().collect::<BTreeSet<_>>();
     println!(
         "unique Trust Anchor IDs found across all snapshot certificates: {}",
