@@ -155,8 +155,8 @@ fn constraint_tokens(constraint: &ConstraintSet) -> TokenStream {
         .iter()
         .map(|name| Literal::string(name))
         .collect::<Vec<_>>();
-    let index_not_after = optional_number(constraint.index_not_after);
-    let index_after = optional_number(constraint.index_after);
+    let serial_not_after = optional_number(constraint.serial_not_after);
+    let serial_after = optional_number(constraint.serial_after);
     let validity_starts_not_after_sec = optional_number(constraint.validity_starts_not_after_sec);
     let validity_starts_after_sec = optional_number(constraint.validity_starts_after_sec);
 
@@ -167,8 +167,8 @@ fn constraint_tokens(constraint: &ConstraintSet) -> TokenStream {
             min_version: #min_version,
             max_version_exclusive: #max_version_exclusive,
             permitted_dns_names: &[#(#permitted_dns_names),*],
-            index_not_after: #index_not_after,
-            index_after: #index_after,
+            serial_not_after: #serial_not_after,
+            serial_after: #serial_after,
             validity_starts_not_after_sec: #validity_starts_not_after_sec,
             validity_starts_after_sec: #validity_starts_after_sec,
         }

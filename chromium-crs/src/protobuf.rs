@@ -1,17 +1,17 @@
 //! Typed Chrome Root Store protobuf decoding.
 //!
 //! The declarations mirror Chromium's checked-in root-store protobuf schema:
-//! <https://chromium.googlesource.com/chromium/src/+/main/net/cert/root_store.proto>.
-//! The separate wire guard rejects fields that are not represented here before
-//! prost performs typed value decoding.
+//! <https://chromium.googlesource.com/chromium/src/+/main/net/cert/root_store.proto>,
+//! last compared with upstream main on 2026-10-16. The separate wire guard
+//! rejects fields that are not represented here before prost performs typed
+//! value decoding; that includes `RootStore` field 4, which upstream reserved
+//! when it moved Merkle Tree Certificate metadata into messages outside
+//! `RootStore`.
 
 use anyhow::{Context, Result, bail, ensure};
 use prost::Message;
 
-use crate::{
-    ConstraintSet, RootStore, TrustAnchor, TrustAnchorKind, validate_trust_anchor_id,
-    wire::validate_root_store,
-};
+use crate::{ConstraintSet, RootStore, TrustAnchor, TrustAnchorKind, wire::validate_root_store};
 
 /// Wire representation of a complete Chrome Root Store.
 #[derive(Clone, PartialEq, Message)]
@@ -27,10 +27,6 @@ struct RootStoreMessage {
     /// Certificates carrying explicit trust-purpose metadata.
     #[prost(message, repeated, tag = "3")]
     additional_certs: Vec<TrustAnchorMessage>,
-
-    /// Merkle Tree Certificate anchors, retained for schema validation.
-    #[prost(message, repeated, tag = "4")]
-    mtc_anchors: Vec<MtcAnchorMessage>,
 }
 
 /// Wire representation of one classical certificate entry.
@@ -114,13 +110,13 @@ struct ConstraintSetMessage {
     #[prost(string, repeated, tag = "5")]
     permitted_dns_names: Vec<String>,
 
-    /// Inclusive maximum Merkle Tree Certificate index.
+    /// Inclusive maximum leaf MTC serial number; ignored on classical anchors.
     #[prost(uint64, optional, tag = "8")]
-    index_not_after: Option<u64>,
+    serial_not_after: Option<u64>,
 
-    /// Exclusive minimum Merkle Tree Certificate index.
+    /// Exclusive minimum leaf MTC serial number; ignored on classical anchors.
     #[prost(uint64, optional, tag = "9")]
-    index_after: Option<u64>,
+    serial_after: Option<u64>,
 
     /// Latest accepted leaf certificate validity start.
     #[prost(int64, optional, tag = "10")]
@@ -129,29 +125,6 @@ struct ConstraintSetMessage {
     /// Exclusive lower bound for the leaf certificate validity start.
     #[prost(int64, optional, tag = "11")]
     validity_starts_after_sec: Option<i64>,
-}
-
-/// Wire representation of a Merkle Tree Certificate anchor.
-///
-/// This crate currently publishes only classical X.509 anchors. Keeping this
-/// message in the schema still detects changes anywhere in the signed payload.
-#[derive(Clone, PartialEq, Message)]
-struct MtcAnchorMessage {
-    /// Binary log identifier.
-    #[prost(bytes = "vec", optional, tag = "1")]
-    log_id: Option<Vec<u8>>,
-
-    /// Alternative sets of Chrome-specific constraints.
-    #[prost(message, repeated, tag = "2")]
-    constraints: Vec<ConstraintSetMessage>,
-
-    /// Whether this entry is trusted for TLS.
-    #[prost(bool, optional, tag = "3")]
-    tls_trust_anchor: Option<bool>,
-
-    /// Stable Chrome Root Store identifier.
-    #[prost(int32, optional, tag = "4")]
-    crs_root_id: Option<i32>,
 }
 
 /// Decodes the signed component payload into the public source model.
@@ -167,12 +140,8 @@ pub fn parse_root_store(input: &[u8]) -> Result<RootStore> {
         trust_anchors,
         version_major,
         additional_certs,
-        mtc_anchors,
     } = message;
     ensure!(version_major > 0, "version_major must be positive");
-    for anchor in &mtc_anchors {
-        validate_mtc_anchor(anchor)?;
-    }
 
     let anchor_count = trust_anchors
         .len()
@@ -190,22 +159,6 @@ pub fn parse_root_store(input: &[u8]) -> Result<RootStore> {
         version: version_major,
         anchors,
     })
-}
-
-/// Validates metadata that is retained only for schema-change detection.
-fn validate_mtc_anchor(message: &MtcAnchorMessage) -> Result<()> {
-    if let Some(log_id) = message.log_id.as_deref() {
-        validate_trust_anchor_id(log_id).context("invalid MTC log_id")?;
-    } else if message.tls_trust_anchor.unwrap_or(false) {
-        bail!("TLS MTC anchor has no log_id");
-    }
-    if let Some(crs_root_id) = message.crs_root_id {
-        ensure!(
-            crs_root_id > 2,
-            "MTC crs_root_id values 0, 1, and 2 are reserved"
-        );
-    }
-    Ok(())
 }
 
 /// Converts one wire certificate entry while rejecting source-only references.
@@ -267,8 +220,8 @@ fn convert_constraint(message: ConstraintSetMessage) -> ConstraintSet {
         min_version: message.min_version,
         max_version_exclusive: message.max_version_exclusive,
         permitted_dns_names: message.permitted_dns_names,
-        index_not_after: message.index_not_after,
-        index_after: message.index_after,
+        serial_not_after: message.serial_not_after,
+        serial_after: message.serial_after,
         validity_starts_not_after_sec: message.validity_starts_not_after_sec,
         validity_starts_after_sec: message.validity_starts_after_sec,
     }
@@ -312,30 +265,5 @@ mod tests {
         }
 
         assert!(parse_root_store(&encoded_root(None, Some(3))).is_ok());
-
-        let reserved_mtc = RootStoreMessage {
-            version_major: 1,
-            mtc_anchors: vec![MtcAnchorMessage {
-                log_id: Some(vec![1]),
-                tls_trust_anchor: Some(true),
-                crs_root_id: Some(2),
-                ..MtcAnchorMessage::default()
-            }],
-            ..RootStoreMessage::default()
-        }
-        .encode_to_vec();
-        assert!(parse_root_store(&reserved_mtc).is_err());
-
-        let missing_log_id = RootStoreMessage {
-            version_major: 1,
-            mtc_anchors: vec![MtcAnchorMessage {
-                tls_trust_anchor: Some(true),
-                crs_root_id: Some(3),
-                ..MtcAnchorMessage::default()
-            }],
-            ..RootStoreMessage::default()
-        }
-        .encode_to_vec();
-        assert!(parse_root_store(&missing_log_id).is_err());
     }
 }

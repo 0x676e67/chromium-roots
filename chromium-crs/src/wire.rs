@@ -12,7 +12,6 @@ enum MessageKind {
     RootStore,
     TrustAnchor,
     ConstraintSet,
-    MtcAnchor,
 }
 
 impl MessageKind {
@@ -22,7 +21,6 @@ impl MessageKind {
             Self::RootStore => "RootStore",
             Self::TrustAnchor => "TrustAnchor",
             Self::ConstraintSet => "ConstraintSet",
-            Self::MtcAnchor => "MtcAnchor",
         }
     }
 }
@@ -101,7 +99,6 @@ const fn field_kind(message: MessageKind, tag: u32) -> Option<FieldKind> {
         MessageKind::RootStore => match tag {
             1 | 3 => Some(FieldKind::Message(MessageKind::TrustAnchor)),
             2 => Some(FieldKind::Varint),
-            4 => Some(FieldKind::Message(MessageKind::MtcAnchor)),
             _ => None,
         },
         MessageKind::TrustAnchor => match tag {
@@ -113,12 +110,6 @@ const fn field_kind(message: MessageKind, tag: u32) -> Option<FieldKind> {
         MessageKind::ConstraintSet => match tag {
             1 | 2 | 8 | 9 | 10 | 11 => Some(FieldKind::Varint),
             3..=5 => Some(FieldKind::Bytes),
-            _ => None,
-        },
-        MessageKind::MtcAnchor => match tag {
-            1 => Some(FieldKind::Bytes),
-            2 => Some(FieldKind::Message(MessageKind::ConstraintSet)),
-            3 | 4 => Some(FieldKind::Varint),
             _ => None,
         },
     }
@@ -167,7 +158,8 @@ mod tests {
 
     #[test]
     fn rejects_unknown_root_store_field() {
-        // Field 5 is not part of the embedded RootStore schema.
+        // Field 4 is reserved by Chromium; field 5 is not declared at all.
+        assert!(validate_root_store(&[0x10, 0x01, 0x22, 0x00]).is_err());
         assert!(validate_root_store(&[0x10, 0x01, 0x28, 0x00]).is_err());
     }
 

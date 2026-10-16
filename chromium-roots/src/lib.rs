@@ -46,11 +46,11 @@ pub struct RootConstraint {
     /// Permitted DNS subtrees for every leaf subject alternative name.
     pub permitted_dns_names: &'static [&'static str],
 
-    /// Inclusive maximum Merkle Tree Certificate index.
-    pub index_not_after: Option<u64>,
+    /// Inclusive maximum leaf MTC serial number; Chromium ignores it on classical anchors.
+    pub serial_not_after: Option<u64>,
 
-    /// Exclusive minimum Merkle Tree Certificate index.
-    pub index_after: Option<u64>,
+    /// Exclusive minimum leaf MTC serial number; Chromium ignores it on classical anchors.
+    pub serial_after: Option<u64>,
 
     /// Latest accepted leaf `notBefore`, in seconds since the Unix epoch.
     pub validity_starts_not_after_sec: Option<i64>,
