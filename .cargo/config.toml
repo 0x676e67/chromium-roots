@@ -1,0 +1,5 @@
+# chromium-roots declares a lower rust-version than the maintenance crate, and
+# Cargo would otherwise resolve every workspace dependency against that floor.
+# CI checks the published crate on its MSRV instead.
+[resolver]
+incompatible-rust-versions = "allow"

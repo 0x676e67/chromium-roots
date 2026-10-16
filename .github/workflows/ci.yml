@@ -51,7 +51,7 @@ jobs:
       - name: Check the published crate on its minimum supported Rust version
         run: cargo +1.85.0 check -p chromium-roots --lib --locked
 
-      - name: Check the workspace minimum supported Rust version
+      - name: Check the workspace on Rust 1.98
         run: cargo check --workspace --all-targets --locked
 
   rust:
