@@ -10,6 +10,8 @@ This crate provides full DER-encoded root certificates together with Chrome trus
 
 Applications must update this dependency and rebuild to receive root-store changes.
 
+The minimum supported Rust version is 1.85.
+
 ## Updating
 
 The checked-in source is generated deterministically by [`chromium-crs`](../chromium-crs). Do not edit the generated module by hand.

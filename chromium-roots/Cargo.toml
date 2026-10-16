@@ -2,7 +2,7 @@
 name = "chromium-roots"
 version = "0.1.2"
 edition = { workspace = true }
-rust-version = { workspace = true }
+rust-version = "1.85"
 authors = { workspace = true }
 description = "A maintainable Rust snapshot of the Chromium Root Store"
 documentation = "https://docs.rs/chromium-roots"
