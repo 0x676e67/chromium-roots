@@ -110,11 +110,11 @@ struct ConstraintSetMessage {
     #[prost(string, repeated, tag = "5")]
     permitted_dns_names: Vec<String>,
 
-    /// Inclusive maximum leaf MTC serial number; ignored on classical anchors.
+    /// Inclusive maximum Merkle Tree Certificate leaf serial; ignored on classical anchors.
     #[prost(uint64, optional, tag = "8")]
     serial_not_after: Option<u64>,
 
-    /// Exclusive minimum leaf MTC serial number; ignored on classical anchors.
+    /// Exclusive minimum Merkle Tree Certificate leaf serial; ignored on classical anchors.
     #[prost(uint64, optional, tag = "9")]
     serial_after: Option<u64>,
 
