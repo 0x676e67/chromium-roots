@@ -187,7 +187,7 @@ pub(super) fn verify_and_extract(crx: &[u8]) -> Result<VerifiedPackage> {
         "CRX3 package has no valid proof from the pinned PKI Metadata key"
     );
 
-    let (manifest, crs) = extract_payload(archive)?;
+    let (manifest, crs_bytes) = extract_payload(archive)?;
     let component_version = manifest
         .get("version")
         .and_then(Value::as_str)
@@ -197,8 +197,8 @@ pub(super) fn verify_and_extract(crx: &[u8]) -> Result<VerifiedPackage> {
     Ok(VerifiedPackage {
         component_version: component_version.to_owned(),
         crx_sha256: Sha256::digest(crx).into(),
-        crs_sha256: Sha256::digest(&crs).into(),
-        crs,
+        crs_sha256: Sha256::digest(&crs_bytes).into(),
+        crs: crs_bytes,
     })
 }
 
