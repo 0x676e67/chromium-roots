@@ -128,10 +128,9 @@ const fn field_kind(message: MessageKind, tag: u32) -> Option<FieldKind> {
 fn read_varint(input: &mut &[u8]) -> Result<u64> {
     let mut value = 0u64;
     for index in 0..10 {
-        let Some((&byte, remaining)) = input.split_first() else {
+        let Some(&byte) = input.split_off_first() else {
             bail!("truncated protobuf varint");
         };
-        *input = remaining;
 
         if index == 9 {
             ensure!(byte <= 1, "protobuf varint exceeds 64 bits");
@@ -148,11 +147,9 @@ fn read_varint(input: &mut &[u8]) -> Result<u64> {
 fn read_length_delimited<'a>(input: &mut &'a [u8]) -> Result<&'a [u8]> {
     let length =
         usize::try_from(read_varint(input)?).context("protobuf field length exceeds usize")?;
-    let Some((value, remaining)) = input.split_at_checked(length) else {
-        bail!("truncated length-delimited protobuf field");
-    };
-    *input = remaining;
-    Ok(value)
+    input
+        .split_off(..length)
+        .context("truncated length-delimited protobuf field")
 }
 
 #[cfg(test)]

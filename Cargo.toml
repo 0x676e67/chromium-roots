@@ -7,7 +7,7 @@ resolver = "3"
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.98"
+rust-version = "1.88"
 authors = ["0x676e67 <gngppz@gmail.com>"]
 repository = "https://github.com/0x676e67/chromium-roots"
 license = "BSD-3-Clause"
@@ -28,7 +28,7 @@ syn = { version = "3", features = ["full"] }
 ureq = { version = "3.1.4", default-features = false, features = ["rustls"] }
 webpki = { package = "rustls-webpki", version = "0.103", features = ["alloc"] }
 x509-parser = "0.18.0"
-zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+zip = { version = "9.5.1", default-features = false, features = ["deflate"] }
 
 [workspace.lints.rust]
 missing_docs = "warn"

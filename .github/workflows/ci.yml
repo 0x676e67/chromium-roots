@@ -32,7 +32,7 @@ jobs:
 
   msrv:
     needs: workflows
-    name: Rust 1.98
+    name: Rust 1.88
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -42,8 +42,8 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
 
-      - name: Install Rust 1.98
-        uses: dtolnay/rust-toolchain@1.98.0
+      - name: Install Rust 1.88
+        uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Check minimum supported Rust version
         run: cargo check --workspace --all-targets --locked

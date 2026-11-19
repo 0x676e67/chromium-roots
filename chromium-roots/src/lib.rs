@@ -182,27 +182,24 @@ const fn encoded_trust_anchor_ids_len(anchors: &[TrustAnchor]) -> usize {
 // `N` must equal `encoded_trust_anchor_ids_len(anchors)`.
 const fn encode_trust_anchor_ids<const N: usize>(anchors: &[TrustAnchor]) -> [u8; N] {
     let mut encoded = [0; N];
+    let mut remaining: &mut [u8] = &mut encoded;
     let mut anchor_index = 0;
-    let mut offset = 0;
 
     while anchor_index < anchors.len() {
-        let Some(id) = anchors[anchor_index].trust_anchor_id else {
-            anchor_index += 1;
-            continue;
-        };
-        encoded[offset] = id.len().to_le_bytes()[0];
-        offset += 1;
-
-        let mut byte_index = 0;
-        while byte_index < id.len() {
-            encoded[offset] = id[byte_index];
-            offset += 1;
-            byte_index += 1;
+        if let Some(id) = anchors[anchor_index].trust_anchor_id {
+            let (length, payload) = remaining.split_at_mut(1);
+            length[0] = id.len().to_le_bytes()[0];
+            let (encoded_id, tail) = payload.split_at_mut(id.len());
+            encoded_id.copy_from_slice(id);
+            remaining = tail;
         }
         anchor_index += 1;
     }
 
-    assert!(offset == N, "encoded Trust Anchor ID length mismatch");
+    assert!(
+        remaining.is_empty(),
+        "encoded Trust Anchor ID length mismatch"
+    );
     encoded
 }
 

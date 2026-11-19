@@ -14,16 +14,12 @@ static ENCODED_TRUST_ANCHOR_IDS: [u8; encoded_trust_anchor_ids().len()] =
 
 fn decode_wire_ids(mut encoded: &[u8]) -> Vec<&[u8]> {
     let mut ids = Vec::new();
-    while let Some((&length, remaining)) = encoded.split_first() {
-        let length = usize::from(length);
+    while let Some(&length) = encoded.split_off_first() {
         assert_ne!(length, 0, "Trust Anchor IDs must not be empty");
-        assert!(
-            remaining.len() >= length,
-            "truncated Trust Anchor ID wire list"
-        );
-        let (id, tail) = remaining.split_at(length);
+        let id = encoded
+            .split_off(..usize::from(length))
+            .expect("truncated Trust Anchor ID wire list");
         ids.push(id);
-        encoded = tail;
     }
     ids
 }

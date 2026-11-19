@@ -5,7 +5,7 @@
 //! validation. The sibling chromium-roots crate contains only generated
 //! static data and its public lookup API.
 
-use anyhow::{Result, ensure};
+use anyhow::{Result, bail, ensure};
 use sha2::{Digest, Sha256};
 
 mod certificates;
@@ -236,11 +236,10 @@ fn validate_dotted_version(
             && component.bytes().all(|byte| byte.is_ascii_digit())),
         "{label} is not a dotted numeric version"
     );
-    if let Some(expected_components) = expected_components {
-        ensure!(
-            components.count() == expected_components,
-            "{label} must have {expected_components} components"
-        );
+    if let Some(expected_components) = expected_components
+        && components.count() != expected_components
+    {
+        bail!("{label} must have {expected_components} components");
     }
     Ok(())
 }

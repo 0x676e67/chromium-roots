@@ -199,11 +199,10 @@ fn validate_mtc_anchor(message: &MtcAnchorMessage) -> Result<()> {
     } else if message.tls_trust_anchor.unwrap_or(false) {
         bail!("TLS MTC anchor has no log_id");
     }
-    if let Some(crs_root_id) = message.crs_root_id {
-        ensure!(
-            crs_root_id > 2,
-            "MTC crs_root_id values 0, 1, and 2 are reserved"
-        );
+    if let Some(crs_root_id) = message.crs_root_id
+        && crs_root_id <= 2
+    {
+        bail!("MTC crs_root_id values 0, 1, and 2 are reserved");
     }
     Ok(())
 }
@@ -237,11 +236,10 @@ fn convert_anchor(message: TrustAnchorMessage, kind: TrustAnchorKind) -> Result<
             "trust_anchors entry must not set tls_trust_anchor"
         );
     }
-    if let Some(crs_root_id) = crs_root_id {
-        ensure!(
-            crs_root_id > 2,
-            "crs_root_id values 0, 1, and 2 are reserved"
-        );
+    if let Some(crs_root_id) = crs_root_id
+        && crs_root_id <= 2
+    {
+        bail!("crs_root_id values 0, 1, and 2 are reserved");
     }
 
     let mut anchor = TrustAnchor::new(kind, der);

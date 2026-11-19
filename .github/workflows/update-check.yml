@@ -43,8 +43,8 @@ jobs:
         with:
           components: rustfmt
 
-      - name: Install Rust 1.98
-        uses: dtolnay/rust-toolchain@1.98.0
+      - name: Install Rust 1.88
+        uses: dtolnay/rust-toolchain@1.88.0
         with:
           components: clippy, rustfmt
 
