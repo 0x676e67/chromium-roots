@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/0x676e67/chromium-roots/compare/v0.1.2...v0.1.3) - 2026-11-19
+
+### Other
+
+- *(deps)* bump zip from 8.6.0 to 9.5.1 ([#44](https://github.com/0x676e67/chromium-roots/pull/44))
+- update Chrome Root Store ([#38](https://github.com/0x676e67/chromium-roots/pull/38))
+- update Chrome Root Store ([#30](https://github.com/0x676e67/chromium-roots/pull/30))
+
 ## [0.1.2](https://github.com/0x676e67/chromium-roots/compare/v0.1.1...v0.1.2) - 2026-10-09
 
 ### Other
